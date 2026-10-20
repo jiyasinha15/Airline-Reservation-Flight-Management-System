@@ -163,6 +163,67 @@ app.post("/api/bookings", async (req, res) => {
 });
 
 
+
+ // Find a booking using its PNR
+app.get("/api/bookings/:pnr", async (req, res) => {
+  const pnr = req.params.pnr.trim().toUpperCase();
+
+  if (!/^[A-Z0-9]{6,20}$/.test(pnr)) {
+    return res.status(400).json({
+      success: false,
+      message: "Please enter a valid booking reference.",
+    });
+  }
+
+  try {
+    const [rows] = await db.execute(
+      `SELECT
+         b.pnr,
+         b.booking_status AS status,
+         b.booking_date AS bookingDate,
+         p.full_name AS passengerName,
+         f.airline,
+         f.flight_code AS flightCode,
+         f.origin,
+         f.destination,
+         f.departure_time AS departureTime,
+         f.arrival_time AS arrivalTime,
+         f.price
+       FROM bookings b
+       JOIN passengers p ON b.passenger_id = p.id
+       JOIN flights f ON b.flight_id = f.id
+       WHERE b.pnr = ?
+       LIMIT 1`,
+      [pnr]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No booking found for this PNR.",
+      });
+    }
+
+    const booking = rows[0];
+
+    res.json({
+      success: true,
+      booking: {
+        ...booking,
+        price: Number(booking.price),
+      },
+    });
+  } catch (error) {
+    console.error("Booking lookup error:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to retrieve booking. Please try again.",
+    });
+  }
+});
+
+
 const PORT = process.env.PORT || 5000;
 
 

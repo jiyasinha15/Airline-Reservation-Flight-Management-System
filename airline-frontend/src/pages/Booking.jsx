@@ -24,6 +24,7 @@ function Booking() {
         return (
             <main className="booking-page">
                 <h2>No flight selected</h2>
+
                 <button className="booking-button" onClick={() => navigate("/")}>
                     Back to homepage
                 </button>
@@ -114,6 +115,13 @@ function Booking() {
                         <span>{search.from} → {search.to}</span>
                         <strong>₹{total.toLocaleString("en-IN")}</strong>
                     </div>
+
+                    <button
+                        className="booking-button"
+                        onClick={() => navigate("/my-bookings")}
+                    >
+                        View My Bookings
+                    </button>
 
                     <button className="booking-button" onClick={() => navigate("/")}>
                         Back to homepage

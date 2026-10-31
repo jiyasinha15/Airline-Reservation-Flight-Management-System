@@ -142,13 +142,16 @@ export default function AdminDashboard() {
 
                     <button
                         className="nav-item"
-                        onClick={() => navigate("/my-bookings")}
+                        onClick={() => navigate("/admin/bookings")}
                     >
                         <Ticket size={19} />
                         Bookings
                     </button>
 
-                    <button className="nav-item">
+                    <button
+                        className="nav-item"
+                        onClick={() => navigate("/admin/passengers")}
+                    >
                         <Users size={19} />
                         Passengers
                     </button>
@@ -315,6 +318,12 @@ export default function AdminDashboard() {
                         <button onClick={() => navigate("/my-bookings")}>
                             <Ticket size={18} />
                             View Bookings
+                            <ArrowUpRight size={17} />
+                        </button>
+
+                        <button onClick={() => navigate("/admin/passengers")}>
+                            <Users size={18} />
+                            View Passengers
                             <ArrowUpRight size={17} />
                         </button>
                     </div>

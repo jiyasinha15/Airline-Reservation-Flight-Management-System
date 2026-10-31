@@ -140,6 +140,98 @@ app.get(
     }
   });
 
+
+// ADMIN PASSENGER MANAGEMENT API
+app.get(
+  "/api/admin/passengers",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const [passengers] = await db.query(`
+        SELECT
+          p.id,
+          p.full_name AS name,
+          p.age,
+          p.gender,
+          p.email,
+          p.phone,
+          COUNT(b.id) AS totalBookings
+        FROM passengers p
+        LEFT JOIN bookings b
+          ON p.id = b.passenger_id
+        GROUP BY
+          p.id,
+          p.full_name,
+          p.age,
+          p.gender,
+          p.email,
+          p.phone
+        ORDER BY p.id DESC
+      `);
+
+      res.json({
+        success: true,
+        count: passengers.length,
+        passengers,
+      });
+    } catch (error) {
+      console.error("Passengers fetch error:", error.message);
+
+      res.status(500).json({
+        success: false,
+        message: "Unable to fetch passenger details.",
+      });
+    }
+  }
+);
+
+
+// ADMIN BOOKING MANAGEMENT API
+app.get(
+  "/api/admin/bookings",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const [bookings] = await db.query(`
+        SELECT
+          b.id,
+          b.pnr,
+          b.booking_status AS status,
+          b.booking_date AS bookingDate,
+          p.full_name AS passengerName,
+          p.email AS passengerEmail,
+          f.flight_code AS flightCode,
+          f.airline,
+          f.origin,
+          f.destination,
+          f.price
+        FROM bookings b
+        JOIN passengers p
+          ON b.passenger_id = p.id
+        JOIN flights f
+          ON b.flight_id = f.id
+        ORDER BY b.id DESC
+      `);
+
+      res.json({
+        success: true,
+        count: bookings.length,
+        bookings,
+      });
+    } catch (error) {
+      console.error("Admin bookings error:", error.message);
+
+      res.status(500).json({
+        success: false,
+        message: "Unable to fetch bookings.",
+      });
+    }
+  }
+);
+
+
 // Demo booking API
 
 app.post("/api/bookings", async (req, res) => {

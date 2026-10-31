@@ -13,6 +13,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./ProtectedRoute";
+import Passengers from "./pages/Passengers";
+import Bookings from "./pages/Bookings";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -30,6 +32,22 @@ createRoot(document.getElementById("root")).render(
           element={
             <ProtectedRoute allowedRole="ADMIN">
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/passengers"
+          element={
+            <ProtectedRoute allowedRole="ADMIN">
+              <Passengers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/bookings"
+          element={
+            <ProtectedRoute allowedRole="ADMIN">
+              <Bookings />
             </ProtectedRoute>
           }
         />

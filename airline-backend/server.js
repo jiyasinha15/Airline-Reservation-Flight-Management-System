@@ -232,6 +232,50 @@ app.get(
 );
 
 
+// ADMIN PAYMENT MANAGEMENT API
+app.get(
+  "/api/admin/payments",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const [payments] = await db.query(`
+        SELECT
+          pay.payment_id,
+          pay.booking_id,
+          pay.amount,
+          pay.payment_method,
+          pay.payment_status,
+          pay.transaction_reference,
+          pay.payment_date,
+          b.pnr,
+          p.full_name AS passengerName,
+          p.email AS passengerEmail
+        FROM payments pay
+        JOIN bookings b
+          ON pay.booking_id = b.id
+        JOIN passengers p
+          ON b.passenger_id = p.id
+        ORDER BY pay.payment_id DESC
+      `);
+
+      res.json({
+        success: true,
+        count: payments.length,
+        payments,
+      });
+    } catch (error) {
+      console.error("Admin payments error:", error.message);
+
+      res.status(500).json({
+        success: false,
+        message: "Unable to fetch payment records.",
+      });
+    }
+  }
+);
+
+
 // Demo booking API
 
 app.post("/api/bookings", async (req, res) => {

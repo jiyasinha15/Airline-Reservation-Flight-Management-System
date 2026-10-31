@@ -156,7 +156,10 @@ export default function AdminDashboard() {
                         Passengers
                     </button>
 
-                    <button className="nav-item">
+                    <button
+                        className="nav-item"
+                        onClick={() => navigate("/admin/payments")}
+                    >
                         <CreditCard size={19} />
                         Payments
                     </button>

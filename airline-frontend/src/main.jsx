@@ -8,6 +8,9 @@ import Flights from "./pages/Flights.jsx";
 import Booking from "./pages/Booking.jsx";
 import MyBookings from "./pages/MyBookings.jsx";
 import "./index.css";
+import RoleSelection from "./pages/RoleSelection";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -17,6 +20,9 @@ createRoot(document.getElementById("root")).render(
         <Route path="/flights" element={<Flights />} />
         <Route path="/booking" element={<Booking />} />
         <Route path="/my-bookings" element={<MyBookings />} />
+        <Route path="/login" element={<RoleSelection />} />
+        <Route path="/login/:role" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>

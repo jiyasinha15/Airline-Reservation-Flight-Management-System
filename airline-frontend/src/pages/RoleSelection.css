@@ -1,0 +1,153 @@
+
+.role-page {
+  min-height: 100vh;
+  background: #071525;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+.role-nav {
+  height: 85px;
+  padding: 0 8%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #26394d;
+}
+
+.role-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #d9b66d;
+  font-size: 21px;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.role-brand b {
+  color: white;
+}
+
+.role-nav button {
+  background: transparent;
+  border: 1px solid #d9b66d;
+  color: #d9b66d;
+  padding: 11px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.role-content {
+  min-height: calc(100vh - 85px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+.role-tag {
+  color: #d9b66d;
+  font-size: 12px;
+  letter-spacing: 4px;
+  font-weight: bold;
+}
+
+.role-content > h1 {
+  font-size: clamp(32px, 5vw, 48px);
+  margin: 18px 0 10px;
+}
+
+.role-subtitle {
+  color: #aebdcb;
+  margin-bottom: 45px;
+}
+
+.role-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 340px));
+  gap: 28px;
+  width: 100%;
+  justify-content: center;
+}
+
+.role-card {
+  background: #10243a;
+  border: 1px solid #294057;
+  border-radius: 16px;
+  padding: 38px 28px;
+  transition: 0.3s ease;
+}
+
+.role-card:hover {
+  transform: translateY(-7px);
+  border-color: #d9b66d;
+  box-shadow: 0 15px 40px #0005;
+}
+
+.role-icon {
+  width: 75px;
+  height: 75px;
+  margin: auto;
+  border-radius: 50%;
+  background: #243a4e;
+  color: #d9b66d;
+  display: grid;
+  place-items: center;
+}
+
+.role-card h2 {
+  font-size: 25px;
+  margin: 22px 0 12px;
+}
+
+.role-card p {
+  color: #aebdcb;
+  line-height: 1.7;
+  min-height: 55px;
+}
+
+.role-card button {
+  width: 100%;
+  margin-top: 25px;
+  padding: 14px;
+  border: none;
+  border-radius: 7px;
+  background: #d9b66d;
+  color: #071525;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.role-card button:hover {
+  background: #edce8b;
+}
+
+.role-bottom {
+  margin-top: 50px;
+  color: #718399;
+  font-size: 10px;
+  letter-spacing: 3px;
+}
+
+@media (max-width: 650px) {
+  .role-cards {
+    grid-template-columns: minmax(0, 360px);
+  }
+
+  .role-nav {
+    padding: 0 5%;
+  }
+
+  .role-subtitle {
+    max-width: 330px;
+    line-height: 1.6;
+  }
+}

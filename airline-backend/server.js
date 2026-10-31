@@ -4,6 +4,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import db from "./db.js";
 import { randomBytes } from "node:crypto";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 dotenv.config();
 
@@ -21,7 +23,7 @@ app.get("/", (req, res) => {
 });
 
 
- // MySQL se flights fetch karne wali API
+// MySQL se flights fetch karne wali API
 app.get("/api/flights", async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -164,7 +166,7 @@ app.post("/api/bookings", async (req, res) => {
 
 
 
- // Find a booking using its PNR
+// Find a booking using its PNR
 app.get("/api/bookings/:pnr", async (req, res) => {
   const pnr = req.params.pnr.trim().toUpperCase();
 
@@ -219,6 +221,146 @@ app.get("/api/bookings/:pnr", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Unable to retrieve booking. Please try again.",
+    });
+  }
+});
+
+// USER SIGNUP API
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { name, email, phone, password } = req.body;
+
+    if (!name?.trim() || !email?.trim() || !phone?.trim() || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required.",
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters.",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const [existingUsers] = await db.execute(
+      "SELECT user_id FROM users WHERE email = ?",
+      [normalizedEmail]
+    );
+
+    if (existingUsers.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: "An account with this email already exists.",
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const [result] = await db.execute(
+      `INSERT INTO users
+       (full_name, email, phone, password_hash, role)
+       VALUES (?, ?, ?, ?, 'USER')`,
+      [name.trim(), normalizedEmail, phone.trim(), passwordHash]
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Account created successfully!",
+      user: {
+        id: result.insertId,
+        name: name.trim(),
+        email: normalizedEmail,
+        role: "USER",
+      },
+    });
+  } catch (error) {
+    console.error("Signup error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to create account.",
+    });
+  }
+});
+
+
+// USER / ADMIN LOGIN API
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password, role } = req.body;
+
+    if (!email?.trim() || !password || !["USER", "ADMIN"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide valid login details.",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const [users] = await db.execute(
+      `SELECT user_id, full_name, email, password_hash, role
+       FROM users
+       WHERE email = ? AND role = ?
+       LIMIT 1`,
+      [normalizedEmail, role]
+    );
+
+    if (users.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password.",
+      });
+    }
+
+    const user = users[0];
+
+    const passwordMatch = await bcrypt.compare(
+      password,
+      user.password_hash
+    );
+
+    if (!passwordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password.",
+      });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is missing in .env");
+    }
+
+    const token = jwt.sign(
+      {
+        userId: user.user_id,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    return res.json({
+      success: true,
+      message: "Login successful!",
+      token,
+      user: {
+        id: user.user_id,
+        name: user.full_name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to login. Please try again.",
     });
   }
 });

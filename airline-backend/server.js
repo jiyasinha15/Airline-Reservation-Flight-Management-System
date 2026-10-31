@@ -276,6 +276,286 @@ app.get(
 );
 
 
+// ADMIN BAGGAGE MANAGEMENT API
+app.get(
+  "/api/admin/baggage",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const [baggage] = await db.query(`
+        SELECT
+          bg.baggage_id,
+          bg.booking_id,
+          bg.baggage_tag,
+          bg.weight_kg,
+          bg.baggage_type,
+          bg.baggage_status,
+          b.pnr,
+          p.full_name AS passengerName
+        FROM baggage bg
+        JOIN bookings b
+          ON bg.booking_id = b.id
+        JOIN passengers p
+          ON b.passenger_id = p.id
+        ORDER BY bg.baggage_id DESC
+      `);
+
+      res.json({
+        success: true,
+        count: baggage.length,
+        baggage,
+      });
+    } catch (error) {
+      console.error("Admin baggage error:", error.message);
+
+      res.status(500).json({
+        success: false,
+        message: "Unable to fetch baggage records.",
+      });
+    }
+  }
+);
+
+
+// ADMIN: ADD NEW FLIGHT
+app.post(
+  "/api/admin/flights",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const {
+        airline,
+        flight_code,
+        origin,
+        destination,
+        departure_time,
+        arrival_time,
+        price,
+        available_seats,
+      } = req.body;
+
+      if (
+        !airline?.trim() ||
+        !flight_code?.trim() ||
+        !origin?.trim() ||
+        !destination?.trim() ||
+        !departure_time ||
+        !arrival_time ||
+        price === undefined ||
+        available_seats === undefined
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Please fill all required flight fields.",
+        });
+      }
+
+      const flightPrice = Number(price);
+      const seats = Number(available_seats);
+
+      if (
+        !Number.isFinite(flightPrice) ||
+        flightPrice <= 0 ||
+        !Number.isInteger(seats) ||
+        seats < 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid flight price or available seats.",
+        });
+      }
+
+      const [result] = await db.execute(
+        `INSERT INTO flights
+        (airline, flight_code, origin, destination,
+         departure_time, arrival_time, price, available_seats)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          airline.trim(),
+          flight_code.trim().toUpperCase(),
+          origin.trim(),
+          destination.trim(),
+          departure_time,
+          arrival_time,
+          flightPrice,
+          seats,
+        ]
+      );
+
+      res.status(201).json({
+        success: true,
+        message: "Flight added successfully!",
+        flightId: result.insertId,
+      });
+    } catch (error) {
+      console.error("Add flight error:", error.message);
+
+      res.status(error.code === "ER_DUP_ENTRY" ? 409 : 500).json({
+        success: false,
+        message:
+          error.code === "ER_DUP_ENTRY"
+            ? "This flight code already exists."
+            : "Unable to add flight.",
+      });
+    }
+  }
+);
+
+// ADMIN: UPDATE FLIGHT
+app.put(
+  "/api/admin/flights/:id",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+
+      const {
+        airline,
+        flight_code,
+        origin,
+        destination,
+        departure_time,
+        arrival_time,
+        price,
+        available_seats,
+      } = req.body;
+
+      if (
+        !Number.isInteger(id) ||
+        id < 1 ||
+        !airline?.trim() ||
+        !flight_code?.trim() ||
+        !origin?.trim() ||
+        !destination?.trim() ||
+        !departure_time ||
+        !arrival_time ||
+        price === undefined ||
+        available_seats === undefined
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid flight details.",
+        });
+      }
+
+      const flightPrice = Number(price);
+      const seats = Number(available_seats);
+
+      if (
+        !Number.isFinite(flightPrice) ||
+        flightPrice <= 0 ||
+        !Number.isInteger(seats) ||
+        seats < 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid flight price or available seats.",
+        });
+      }
+
+      const [result] = await db.execute(
+        `UPDATE flights
+         SET airline = ?,
+             flight_code = ?,
+             origin = ?,
+             destination = ?,
+             departure_time = ?,
+             arrival_time = ?,
+             price = ?,
+             available_seats = ?
+         WHERE id = ?`,
+        [
+          airline.trim(),
+          flight_code.trim().toUpperCase(),
+          origin.trim(),
+          destination.trim(),
+          departure_time,
+          arrival_time,
+          flightPrice,
+          seats,
+          id,
+        ]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Flight not found.",
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Flight updated successfully!",
+      });
+    } catch (error) {
+      console.error("Update flight error:", error.message);
+
+      res.status(error.code === "ER_DUP_ENTRY" ? 409 : 500).json({
+        success: false,
+        message:
+          error.code === "ER_DUP_ENTRY"
+            ? "This flight code already exists."
+            : "Unable to update flight.",
+      });
+    }
+  }
+);
+
+// ADMIN: DELETE FLIGHT
+app.delete(
+  "/api/admin/flights/:id",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+
+      if (!Number.isInteger(id) || id < 1) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid flight ID.",
+        });
+      }
+
+      const [result] = await db.execute(
+        "DELETE FROM flights WHERE id = ?",
+        [id]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Flight not found.",
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Flight deleted successfully!",
+      });
+    } catch (error) {
+      console.error("Delete flight error:", error.message);
+
+      if (error.code === "ER_ROW_IS_REFERENCED_2") {
+        return res.status(409).json({
+          success: false,
+          message: "This flight has existing bookings and cannot be deleted.",
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: "Unable to delete flight.",
+      });
+    }
+  }
+);
+
+
 // Demo booking API
 
 app.post("/api/bookings", async (req, res) => {

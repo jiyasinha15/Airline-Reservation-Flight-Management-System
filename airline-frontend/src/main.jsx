@@ -16,6 +16,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import Passengers from "./pages/Passengers";
 import Bookings from "./pages/Bookings";
 import Payments from "./pages/Payments";
+import Baggage from "./pages/Baggage";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -57,6 +58,14 @@ createRoot(document.getElementById("root")).render(
           element={
             <ProtectedRoute allowedRole="ADMIN">
               <Payments />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/baggage"
+          element={
+            <ProtectedRoute allowedRole="ADMIN">
+              <Baggage />
             </ProtectedRoute>
           }
         />

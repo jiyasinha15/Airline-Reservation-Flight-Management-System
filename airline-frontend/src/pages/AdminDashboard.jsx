@@ -164,7 +164,10 @@ export default function AdminDashboard() {
                         Payments
                     </button>
 
-                    <button className="nav-item">
+                    <button
+                        className="nav-item"
+                        onClick={() => navigate("/admin/baggage")}
+                    >
                         <Luggage size={19} />
                         Baggage
                     </button>

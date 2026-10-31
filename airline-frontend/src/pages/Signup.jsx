@@ -5,6 +5,7 @@ import "./Signup.css";
 
 export default function Signup() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -20,7 +21,7 @@ export default function Signup() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (form.password !== form.confirmPassword) {
@@ -28,7 +29,41 @@ export default function Signup() {
       return;
     }
 
-    alert("Signup UI ready! Database connection will be added next.");
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        "http://localhost:5000/api/auth/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: form.name,
+            email: form.email,
+            phone: form.phone,
+            password: form.password,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Signup failed!");
+        return;
+      }
+
+      alert("Account created successfully!");
+
+      navigate("/login/user");
+    } catch (error) {
+      console.error("Signup error:", error);
+      alert("Unable to connect to server. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -108,8 +143,12 @@ export default function Signup() {
               required
             />
 
-            <button className="signup-submit" type="submit">
-              Create Account
+            <button
+              className="signup-submit"
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? "Creating Account..." : "Create Account"}
             </button>
           </form>
 

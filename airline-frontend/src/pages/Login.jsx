@@ -9,15 +9,57 @@ import "./Login.css";
 export default function Login() {
     const { role } = useParams();
     const navigate = useNavigate();
-
+    const [loading, setLoading] = useState(false);
     const isAdmin = role === "admin";
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        alert("Login UI ready! Backend authentication will be connected next.");
+
+        try {
+            setLoading(true);
+
+            const response = await fetch(
+                "http://localhost:5000/api/auth/login",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        email,
+                        password,
+                        role: isAdmin ? "ADMIN" : "USER",
+                    }),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert(data.message || "Login failed!");
+                return;
+            }
+
+            localStorage.setItem("aureliaToken", data.token);
+            localStorage.setItem("aureliaUser", JSON.stringify(data.user));
+
+            alert("Login successful! Welcome to Aurelia Air.");
+
+            if (isAdmin) {
+                navigate("/admin/dashboard");
+            } else {
+                navigate("/");
+            }
+
+        } catch (error) {
+            console.error("Login error:", error);
+            alert("Unable to connect to server.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -77,8 +119,12 @@ export default function Login() {
                             </button>
                         </div>
 
-                        <button className="auth-submit" type="submit">
-                            Sign In
+                        <button
+                            className="auth-submit"
+                            type="submit"
+                            disabled={loading}
+                        >
+                            {loading ? "Signing In..." : "Sign In"}
                         </button>
                     </form>
 

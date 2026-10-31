@@ -56,6 +56,50 @@ app.get("/api/flights", async (req, res) => {
   }
 });
 
+// ADMIN DASHBOARD STATISTICS
+app.get("/api/admin/stats", async (req, res) => {
+  try {
+    const [[flightData]] = await db.query(
+      "SELECT COUNT(*) AS totalFlights FROM flights"
+    );
+
+    const [[passengerData]] = await db.query(
+      "SELECT COUNT(*) AS totalPassengers FROM passengers"
+    );
+
+    const [[bookingData]] = await db.query(
+      `SELECT
+        COUNT(*) AS totalBookings,
+        SUM(CASE WHEN booking_status = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmedBookings,
+        SUM(CASE WHEN booking_status = 'PENDING' THEN 1 ELSE 0 END) AS pendingBookings
+       FROM bookings`
+    );
+
+    const [[paymentData]] = await db.query(
+      `SELECT COALESCE(SUM(amount), 0) AS totalRevenue
+       FROM payments
+       WHERE payment_status = 'SUCCESS'`
+    );
+
+    res.json({
+      success: true,
+      stats: {
+        totalFlights: flightData.totalFlights,
+        totalPassengers: passengerData.totalPassengers,
+        totalBookings: bookingData.totalBookings,
+        confirmedBookings: bookingData.confirmedBookings,
+        pendingBookings: bookingData.pendingBookings,
+        totalRevenue: Number(paymentData.totalRevenue),
+      },
+    });
+  } catch (error) {
+    console.error("Admin stats error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Unable to load dashboard statistics.",
+    });
+  }
+});
 
 // Demo booking API
 

@@ -14,6 +14,41 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// JWT AUTHENTICATION MIDDLEWARE
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required.",
+    });
+  }
+
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch (error) {
+    return res.status(403).json({
+      success: false,
+      message: "Invalid or expired token.",
+    });
+  }
+};
+
+// ADMIN ROLE MIDDLEWARE
+const requireAdmin = (req, res, next) => {
+  if (req.user.role !== "ADMIN") {
+    return res.status(403).json({
+      success: false,
+      message: "Admin access only.",
+    });
+  }
+
+  next();
+};
+
 // Home route
 app.get("/", (req, res) => {
   res.json({
@@ -57,49 +92,53 @@ app.get("/api/flights", async (req, res) => {
 });
 
 // ADMIN DASHBOARD STATISTICS
-app.get("/api/admin/stats", async (req, res) => {
-  try {
-    const [[flightData]] = await db.query(
-      "SELECT COUNT(*) AS totalFlights FROM flights"
-    );
+app.get(
+  "/api/admin/stats",
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const [[flightData]] = await db.query(
+        "SELECT COUNT(*) AS totalFlights FROM flights"
+      );
 
-    const [[passengerData]] = await db.query(
-      "SELECT COUNT(*) AS totalPassengers FROM passengers"
-    );
+      const [[passengerData]] = await db.query(
+        "SELECT COUNT(*) AS totalPassengers FROM passengers"
+      );
 
-    const [[bookingData]] = await db.query(
-      `SELECT
+      const [[bookingData]] = await db.query(
+        `SELECT
         COUNT(*) AS totalBookings,
         SUM(CASE WHEN booking_status = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmedBookings,
         SUM(CASE WHEN booking_status = 'PENDING' THEN 1 ELSE 0 END) AS pendingBookings
        FROM bookings`
-    );
+      );
 
-    const [[paymentData]] = await db.query(
-      `SELECT COALESCE(SUM(amount), 0) AS totalRevenue
+      const [[paymentData]] = await db.query(
+        `SELECT COALESCE(SUM(amount), 0) AS totalRevenue
        FROM payments
        WHERE payment_status = 'SUCCESS'`
-    );
+      );
 
-    res.json({
-      success: true,
-      stats: {
-        totalFlights: flightData.totalFlights,
-        totalPassengers: passengerData.totalPassengers,
-        totalBookings: bookingData.totalBookings,
-        confirmedBookings: bookingData.confirmedBookings,
-        pendingBookings: bookingData.pendingBookings,
-        totalRevenue: Number(paymentData.totalRevenue),
-      },
-    });
-  } catch (error) {
-    console.error("Admin stats error:", error.message);
-    res.status(500).json({
-      success: false,
-      message: "Unable to load dashboard statistics.",
-    });
-  }
-});
+      res.json({
+        success: true,
+        stats: {
+          totalFlights: flightData.totalFlights,
+          totalPassengers: passengerData.totalPassengers,
+          totalBookings: bookingData.totalBookings,
+          confirmedBookings: bookingData.confirmedBookings,
+          pendingBookings: bookingData.pendingBookings,
+          totalRevenue: Number(paymentData.totalRevenue),
+        },
+      });
+    } catch (error) {
+      console.error("Admin stats error:", error.message);
+      res.status(500).json({
+        success: false,
+        message: "Unable to load dashboard statistics.",
+      });
+    }
+  });
 
 // Demo booking API
 

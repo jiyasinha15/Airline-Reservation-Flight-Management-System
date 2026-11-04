@@ -177,3 +177,27 @@
     padding: 28px 22px;
   }
 }
+
+
+
+.login-link {
+  background: transparent;
+  border: none;
+  color: #34445d;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.login-link:hover {
+  color: #c69b50;
+}
+
+.login-link:focus-visible {
+  outline: 2px solid #c69b50;
+  outline-offset: 4px;
+  border-radius: 4px;
+}

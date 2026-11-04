@@ -17,18 +17,26 @@ import Passengers from "./pages/Passengers";
 import Bookings from "./pages/Bookings";
 import Payments from "./pages/Payments";
 import Baggage from "./pages/Baggage";
+import AdminFlights from "./pages/AdminFlights";
+import { Navigate } from "react-router-dom";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
+
       <Routes>
-        <Route path="/" element={<App />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        <Route path="/home" element={<App />} />
+
         <Route path="/flights" element={<Flights />} />
         <Route path="/booking" element={<Booking />} />
         <Route path="/my-bookings" element={<MyBookings />} />
+
         <Route path="/login" element={<RoleSelection />} />
         <Route path="/login/:role" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+
         <Route
           path="/admin/dashboard"
           element={
@@ -37,30 +45,7 @@ createRoot(document.getElementById("root")).render(
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/admin/passengers"
-          element={
-            <ProtectedRoute allowedRole="ADMIN">
-              <Passengers />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/bookings"
-          element={
-            <ProtectedRoute allowedRole="ADMIN">
-              <Bookings />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/payments"
-          element={
-            <ProtectedRoute allowedRole="ADMIN">
-              <Payments />
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/admin/baggage"
           element={
@@ -69,7 +54,17 @@ createRoot(document.getElementById("root")).render(
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/admin/flights"
+          element={
+            <ProtectedRoute allowedRole="ADMIN">
+              <AdminFlights />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
+
     </BrowserRouter>
   </StrictMode>
 );

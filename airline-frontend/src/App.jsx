@@ -22,6 +22,7 @@ import "./index.css";
 import { useNavigate } from "react-router-dom";
 
 
+
 const destinations = [
   {
     city: "Dubai",
@@ -172,7 +173,9 @@ function App() {
         </nav>
 
         <div className="nav-actions">
-          <a className="login-link" href="#footer">Sign in</a>
+          <button onClick={() => navigate("/login")}>
+            Sign in
+          </button>
           <a className="nav-button" href="#flight-search">
             Book a flight <ArrowRight size={16} />
           </a>

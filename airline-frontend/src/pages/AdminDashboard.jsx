@@ -135,7 +135,10 @@ export default function AdminDashboard() {
                         Dashboard
                     </button>
 
-                    <button className="nav-item" onClick={() => navigate("/flights")}>
+                    <button
+                        className="nav-item"
+                        onClick={() => navigate("/admin/flights")}
+                    >
                         <Plane size={19} />
                         Flights
                     </button>
@@ -315,9 +318,9 @@ export default function AdminDashboard() {
                         <h2>Manage Operations</h2>
                         <p>Quickly access your airline management pages.</p>
 
-                        <button onClick={() => navigate("/flights")}>
+                        <button onClick={() => navigate("/admin/flights")}>
                             <Plane size={18} />
-                            View Flights
+                            Manage Flights
                             <ArrowUpRight size={17} />
                         </button>
 

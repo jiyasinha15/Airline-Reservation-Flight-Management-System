@@ -19,6 +19,9 @@ import Payments from "./pages/Payments";
 import Baggage from "./pages/Baggage";
 import AdminFlights from "./pages/AdminFlights";
 import { Navigate } from "react-router-dom";
+import Payment from "./pages/Payment.jsx";
+
+
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -31,8 +34,9 @@ createRoot(document.getElementById("root")).render(
 
         <Route path="/flights" element={<Flights />} />
         <Route path="/booking" element={<Booking />} />
+        <Route path="/payments" element={<Payments />} />
         <Route path="/my-bookings" element={<MyBookings />} />
-
+        <Route path="/payment" element={<Payment />} />
         <Route path="/login" element={<RoleSelection />} />
         <Route path="/login/:role" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
@@ -63,6 +67,36 @@ createRoot(document.getElementById("root")).render(
             </ProtectedRoute>
           }
         />
+
+
+        <Route
+          path="/admin/passengers"
+          element={
+            <ProtectedRoute allowedRole="ADMIN">
+              <Passengers />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/bookings"
+          element={
+            <ProtectedRoute allowedRole="ADMIN">
+              <Bookings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/payments"
+          element={
+            <ProtectedRoute allowedRole="ADMIN">
+              <Payments />
+            </ProtectedRoute>
+          }
+        />
+        
+
       </Routes>
 
     </BrowserRouter>

@@ -887,6 +887,137 @@ app.get("/api/db-test", async (req, res) => {
   }
 });
 
+// ================= PAYMENT API =================
+
+app.post("/api/payments", async (req, res) => {
+  const { bookingId, paymentMethod, passengerCount, simulateFailure } = req.body;
+
+  const allowedMethods = ["UPI", "CARD", "NET_BANKING"];
+
+  if (
+    !bookingId ||
+    !allowedMethods.includes(paymentMethod) ||
+    !Number.isInteger(Number(passengerCount)) ||
+    Number(passengerCount) < 1
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid payment details.",
+    });
+  }
+
+  let connection;
+
+  try {
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    // Get booking and flight fare
+    const [rows] = await connection.execute(
+      `SELECT b.id, b.booking_status, f.price
+       FROM bookings b
+       JOIN flights f ON b.flight_id = f.id
+       WHERE b.id = ?
+       FOR UPDATE`,
+      [bookingId]
+    );
+
+    if (rows.length === 0) {
+      await connection.rollback();
+
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found.",
+      });
+    }
+
+    const booking = rows[0];
+
+    // Prevent duplicate successful payment
+    const [existingPayment] = await connection.execute(
+      `SELECT payment_id FROM payments
+       WHERE booking_id = ? AND payment_status = 'SUCCESS'`,
+      [bookingId]
+    );
+
+    if (existingPayment.length > 0) {
+      await connection.rollback();
+
+      return res.status(409).json({
+        success: false,
+        message: "This booking is already paid.",
+      });
+    }
+
+    // Calculate amount using database fare
+    const amount = Number(booking.price) * Number(passengerCount);
+
+    // Demo simulation only
+    const paymentStatus = simulateFailure ? "FAILED" : "SUCCESS";
+
+    const transactionReference =
+      "AU-PAY-" + randomBytes(6).toString("hex").toUpperCase();
+
+    // Save payment record
+    const [paymentResult] = await connection.execute(
+      `INSERT INTO payments
+       (booking_id, amount, payment_method, payment_status, transaction_reference)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        bookingId,
+        amount,
+        paymentMethod,
+        paymentStatus,
+        transactionReference,
+      ]
+    );
+
+    // Confirm booking only after successful demo payment
+    if (paymentStatus === "SUCCESS") {
+      await connection.execute(
+        `UPDATE bookings
+         SET booking_status = 'CONFIRMED'
+         WHERE id = ?`,
+        [bookingId]
+      );
+    }
+
+    await connection.commit();
+
+    return res.status(201).json({
+      success: true,
+      message:
+        paymentStatus === "SUCCESS"
+          ? "Demo payment successful. Booking confirmed."
+          : "Demo payment failed. Booking remains pending.",
+      payment: {
+        paymentId: paymentResult.insertId,
+        bookingId,
+        amount,
+        paymentMethod,
+        paymentStatus,
+        transactionReference,
+      },
+    });
+
+  } catch (error) {
+    if (connection) {
+      await connection.rollback();
+    }
+
+    console.error("Payment error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Payment could not be processed.",
+    });
+
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Aurelia Air backend running at http://localhost:${PORT}`);

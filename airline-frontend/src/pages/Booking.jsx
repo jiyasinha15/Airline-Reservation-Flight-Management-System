@@ -69,8 +69,15 @@ function Booking() {
                 throw new Error(data.message || "Booking could not be saved.");
             }
 
-            setPnr(data.booking.pnr);
-            setConfirmed(true);
+            navigate("/payment", {
+                state: {
+                    booking: data.booking,
+                    passenger,
+                    flight,
+                    search,
+                    total
+                }
+            });
         } catch (err) {
             console.error("Booking error:", err);
             setError(

@@ -167,7 +167,18 @@ function App() {
 
         <nav className={menuOpen ? "nav-links nav-open" : "nav-links"}>
           <a href="#home" onClick={() => setMenuOpen(false)}>Home</a>
+          <a href="#flight-search" onClick={() => setMenuOpen(false)}>Book Flights</a>
           <a href="#destinations" onClick={() => setMenuOpen(false)}>Destinations</a>
+          <a
+            href="/flight-tracker"
+            onClick={(e) => {
+              e.preventDefault();
+              setMenuOpen(false);
+              navigate("/flight-tracker");
+            }}
+          >
+            Flight Tracker
+          </a>
           <a href="#benefits" onClick={() => setMenuOpen(false)}>Why Aurelia</a>
           <a href="#footer" onClick={() => setMenuOpen(false)}>Contact</a>
         </nav>
@@ -387,7 +398,7 @@ function App() {
             <div className="search-footer">
               <span className="search-hint">
                 <ShieldCheck size={15} />
-                No booking charges on this demo
+                Search available flights and compare fares
               </span>
               <button className="search-button" type="submit">
                 <Search size={18} /> Search flights
@@ -509,6 +520,16 @@ function App() {
           <p>Travel beautifully. Arrive inspired.</p>
           <a href="#home" className="back-top">
             Back to top ↑
+          </a>
+          <a
+            href="/flight-tracker"
+            className="back-top"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/flight-tracker");
+            }}
+          >
+            Track your flight →
           </a>
         </div>
         <div className="footer-bottom">

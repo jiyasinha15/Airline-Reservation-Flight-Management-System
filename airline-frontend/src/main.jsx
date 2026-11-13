@@ -20,7 +20,7 @@ import Baggage from "./pages/Baggage";
 import AdminFlights from "./pages/AdminFlights";
 import { Navigate } from "react-router-dom";
 import Payment from "./pages/Payment.jsx";
-
+import FlightTracker from "./pages/FlightTracker.jsx";
 
 
 createRoot(document.getElementById("root")).render(
@@ -95,7 +95,7 @@ createRoot(document.getElementById("root")).render(
             </ProtectedRoute>
           }
         />
-        
+        <Route path="/flight-tracker" element={<FlightTracker />} />
 
       </Routes>
 

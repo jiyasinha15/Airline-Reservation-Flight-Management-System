@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
     Plane,
@@ -8,390 +8,351 @@ import {
     Luggage,
     ArrowRight,
     ShieldCheck,
+    RefreshCw,
+    Users
 } from "lucide-react";
+import "./Flights.css";
 
 const API_URL = "http://localhost:5000/api/flights";
 
-const cityNames = {
-    DEL: "Delhi",
-    BOM: "Mumbai",
-    BLR: "Bengaluru",
-    HYD: "Hyderabad",
-    MAA: "Chennai",
-    CCU: "Kolkata",
-    DXB: "Dubai",
-    SIN: "Singapore",
-    LHR: "London",
-};
-
 function getDuration(departure, arrival) {
-    if (!departure || !arrival) return "Not available";
+    if (!departure || !arrival) return "N/A";
 
-    const toMinutes = (time) => {
-        const [hours, minutes] = time.split(":").map(Number);
-        return hours * 60 + minutes;
-    };
+    const [dh, dm] = departure.split(":").map(Number);
+    const [ah, am] = arrival.split(":").map(Number);
 
-    let difference = toMinutes(arrival) - toMinutes(departure);
+    let start = dh * 60 + dm;
+    let end = ah * 60 + am;
 
-    // Account for flights arriving after midnight.
-    if (difference < 0) difference += 24 * 60;
+    if (end < start) end += 24 * 60;
 
-    const hours = Math.floor(difference / 60);
-    const minutes = difference % 60;
-
-    return `${hours}h ${minutes}m`;
+    const total = end - start;
+    return `${Math.floor(total / 60)}h ${total % 60}m`;
 }
 
-function Flights() {
-    const navigate = useNavigate();
+function formatTime(time) {
+    if (!time) return "--:--";
+
+    const [hours, minutes] = time.split(":");
+    const date = new Date();
+    date.setHours(Number(hours), Number(minutes));
+
+    return date.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+    });
+}
+
+export default function Flights() {
     const location = useLocation();
+    const navigate = useNavigate();
 
-    // Support both the original state and a nested search object.
-    const search = location.state?.search || location.state;
+    const search = location.state?.search || location.state || {};
 
-    const [sortBy, setSortBy] = useState("recommended");
     const [flights, setFlights] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [sortBy, setSortBy] = useState("recommended");
 
-    useEffect(() => {
-        const controller = new AbortController();
+    const passengerCount = Math.max(
+        1,
+        Number(search.passengers || 1)
+    );
 
-        async function fetchFlights() {
+
+    async function fetchFlights() {
+        try {
             setLoading(true);
             setError("");
 
-            try {
-                const response = await fetch(API_URL, {
-                    signal: controller.signal,
-                });
+            const params = new URLSearchParams();
 
-                if (!response.ok) {
-                    throw new Error("Unable to load flights from the server.");
-                }
+            if (search.from) params.set("from", search.from);
+            if (search.to) params.set("to", search.to);
+            if (search.departure) params.set("date", search.departure);
 
-                const data = await response.json();
+            params.set("passengers", String(passengerCount));
 
-                if (!data.success || !Array.isArray(data.flights)) {
-                    throw new Error("The server returned an invalid flight list.");
-                }
+            const response = await fetch(
+                `${API_URL}?${params.toString()}`
+            );
 
-                const formattedFlights = data.flights.map((flight) => ({
-                    ...flight,
-                    id: flight.id,
-                    code:
-                        flight.flightCode ||
-                        flight.code ||
-                        "Flight",
-                    from: flight.from,
-                    to: flight.to,
-                    price: Number(flight.price),
-                    duration: getDuration(
-                        flight.departureTime,
-                        flight.arrivalTime
-                    ),
-                    stops: flight.stops || "Not specified",
-                    baggage: flight.baggage || "Not specified",
-                }));
-
-                setFlights(formattedFlights);
-            } catch (err) {
-                if (err.name !== "AbortError") {
-                    console.error("Flight loading error:", err);
-                    setError(
-                        "Unable to connect to the flight server. Please check that your backend is running."
-                    );
-                }
-            } finally {
-                if (!controller.signal.aborted) {
-                    setLoading(false);
-                }
+            if (!response.ok) {
+                throw new Error("Unable to fetch flights");
             }
+
+            const data = await response.json();
+
+            const formattedFlights = (data.flights || []).map((flight) => ({
+                ...flight,
+                code: flight.flightCode,
+                price: Number(flight.price),
+                availableSeats: Number(flight.availableSeats)
+            }));
+
+            setFlights(formattedFlights);
+
+        } catch (err) {
+            console.error(err);
+            setError("Flights load nahi ho paayi. Backend check karo.");
+        } finally {
+            setLoading(false);
         }
-
-        fetchFlights();
-
-        return () => controller.abort();
-    }, []);
-
-    const formatDate = (date) => {
-        if (!date) return "Not selected";
-
-        return new Date(`${date}T12:00:00`).toLocaleDateString(
-            "en-IN",
-            {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-            }
-        );
-    };
-
-    if (!search?.from || !search?.to) {
-        return (
-            <main className="flights-page">
-                <div className="flight-empty">
-                    <Plane size={42} />
-                    <h2>Ready for take-off?</h2>
-                    <p>Search for a journey to explore available flights.</p>
-                    <button
-                        className="flight-primary-button"
-                        onClick={() => navigate("/")}
-                    >
-                        Back to homepage
-                    </button>
-                </div>
-            </main>
-        );
     }
 
-    // Only show flights matching the requested route.
-    const matchingFlights = flights.filter(
-        (flight) =>
-            flight.from?.toUpperCase() === search.from.toUpperCase() &&
-            flight.to?.toUpperCase() === search.to.toUpperCase()
-    );
 
-    const sortedFlights = [...matchingFlights].sort((a, b) => {
-        if (sortBy === "price") return a.price - b.price;
+    useEffect(() => {
+        fetchFlights();
+    }, [search.from, search.to, search.departure, passengerCount]);
 
-        if (sortBy === "duration") {
-            const minutes = (duration) => {
-                const match = duration.match(/(\d+)h\s+(\d+)m/);
-                return match
-                    ? Number(match[1]) * 60 + Number(match[2])
-                    : Infinity;
-            };
+    const filteredFlights = useMemo(() => {
+        let result = [...flights];
 
-            return minutes(a.duration) - minutes(b.duration);
+        if (search.from) {
+            result = result.filter(
+                (flight) =>
+                    flight.from?.toUpperCase() === search.from.toUpperCase()
+            );
         }
 
-        return a.id - b.id;
-    });
+        if (search.to) {
+            result = result.filter(
+                (flight) =>
+                    flight.to?.toUpperCase() === search.to.toUpperCase()
+            );
+        }
+
+        result = result.filter(
+            (flight) => flight.availableSeats >= passengerCount
+        );
+
+        if (sortBy === "price") {
+            result.sort((a, b) => a.price - b.price);
+        } else if (sortBy === "duration") {
+            result.sort(
+                (a, b) =>
+                    a.departureTime.localeCompare(b.departureTime)
+            );
+        }
+
+        return result;
+    }, [flights, search.from, search.to, passengerCount, sortBy]);
+
+    function selectFlight(flight) {
+        navigate("/booking", {
+            state: {
+                search,
+                flight
+            }
+        });
+    }
 
     return (
-        <main className="flights-page">
+        <div className="flights-page">
+
             <header className="flights-header">
                 <button
-                    className="flight-back"
-                    onClick={() => navigate("/")}
+                    className="back-button"
+                    onClick={() => navigate("/home")}
                 >
-                    <ArrowLeft size={18} /> Homepage
+                    <ArrowLeft size={18} />
+                    Back to Home
                 </button>
 
-                <div className="flight-brand">
-                    <Plane size={25} />
-                    <span>
-                        AURELIA <small>AIR</small>
-                    </span>
+                <div className="flight-logo">
+                    <Plane size={24} />
+                    <span>AURELIA AIR</span>
                 </div>
-
-                <span className="flight-secure">
-                    <ShieldCheck size={16} /> Secure journey
-                </span>
             </header>
 
-            <section className="flight-search-summary">
-                <span className="flight-kicker">YOUR JOURNEY</span>
+            <main className="flights-container">
 
-                <div className="flight-route">
+                <section className="flights-heading">
+                    <span className="section-tag">YOUR JOURNEY STARTS HERE</span>
+                    <h1>Available <span>Flights</span></h1>
+                    <p>Choose your preferred flight and get ready to fly.</p>
+                </section>
+
+                <section className="flight-search-summary">
                     <div>
-                        <h1>{search.from}</h1>
-                        <p>{cityNames[search.from] || search.from}</p>
+                        <span>FROM</span>
+                        <h2>{search.from || "All Airports"}</h2>
                     </div>
 
-                    <div className="flight-route-middle">
-                        <Plane size={23} />
-                        <span />
-                        <small>
-                            {search.tripType === "round"
-                                ? "Round trip"
-                                : "One way"}
-                        </small>
-                    </div>
+                    <ArrowRight className="summary-arrow" />
 
                     <div>
-                        <h1>{search.to}</h1>
-                        <p>{cityNames[search.to] || search.to}</p>
+                        <span>TO</span>
+                        <h2>{search.to || "All Destinations"}</h2>
                     </div>
-                </div>
 
-                <div className="flight-trip-details">
-                    <span>
-                        Departure:{" "}
-                        <strong>{formatDate(search.departure)}</strong>
-                    </span>
+                    <div className="summary-info">
+                        <Users size={17} />
+                        <span>{passengerCount} Passenger(s)</span>
+                    </div>
 
-                    {search.tripType === "round" && (
-                        <span>
-                            Return:{" "}
-                            <strong>{formatDate(search.returnDate)}</strong>
-                        </span>
+                    {search.departure && (
+                        <div className="summary-info">
+                            <span>{search.departure}</span>
+                        </div>
                     )}
+                </section>
 
-                    <span>
-                        Travellers: <strong>{search.passengers}</strong>
-                    </span>
-
-                    <span>
-                        Class: <strong>{search.travelClass}</strong>
-                    </span>
-                </div>
-
-                <button
-                    className="flight-edit-search"
-                    onClick={() => navigate("/")}
-                >
-                    Edit search
-                </button>
-            </section>
-
-            <section className="flight-results">
-                <div className="flight-results-heading">
+                <section className="flight-toolbar">
                     <div>
-                        <span className="flight-kicker">
-                            HANDPICKED FOR YOUR TRIP
-                        </span>
-                        <h2>Available flights</h2>
-                        <p>Choose the flight that works best for you.</p>
+                        <h2>Choose Your Flight</h2>
+                        <p>
+                            {loading
+                                ? "Searching flights..."
+                                : `${filteredFlights.length} flights available`}
+                        </p>
                     </div>
 
-                    <label className="flight-sort">
-                        Sort by
-                        <select
-                            value={sortBy}
-                            onChange={(event) =>
-                                setSortBy(event.target.value)
-                            }
-                        >
-                            <option value="recommended">Recommended</option>
-                            <option value="price">Lowest price</option>
-                            <option value="duration">Duration</option>
-                        </select>
-                    </label>
-                </div>
-
-                <div className="flight-demo-note">
-                    <ShieldCheck size={17} />
-                    Database flights and sample fares — not live airline
-                    availability.
-                </div>
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                    >
+                        <option value="recommended">Recommended</option>
+                        <option value="price">Lowest Price</option>
+                        <option value="duration">Departure Time</option>
+                    </select>
+                </section>
 
                 {loading && (
-                    <div className="flight-empty">
-                        <p>Loading flights from Aurelia Air...</p>
+                    <div className="flight-message">
+                        <RefreshCw className="loading-icon" size={28} />
+                        <p>Finding the best flights for you...</p>
                     </div>
                 )}
 
                 {!loading && error && (
-                    <div className="flight-empty" role="alert">
-                        <Plane size={36} />
-                        <h2>Flights unavailable</h2>
+                    <div className="flight-message error-message">
+                        <h3>Something went wrong</h3>
                         <p>{error}</p>
-                        <button
-                            className="flight-primary-button"
-                            onClick={() => window.location.reload()}
-                        >
-                            Try again
+                        <button onClick={fetchFlights}>
+                            <RefreshCw size={17} /> Try Again
                         </button>
                     </div>
                 )}
 
-                {!loading && !error && sortedFlights.length === 0 && (
-                    <div className="flight-empty">
-                        <Plane size={36} />
-                        <h2>No flights found</h2>
+                {!loading && !error && filteredFlights.length === 0 && (
+                    <div className="flight-message">
+                        <Plane size={35} />
+                        <h3>No Flights Found</h3>
                         <p>
-                            No flights are currently stored for{" "}
-                            {search.from} to {search.to}. Try Delhi to Mumbai
-                            or add this route to your database.
+                            Is route par abhi koi flight available nahi hai,
+                            ya selected passengers ke liye seats nahi hain.
                         </p>
-                        <button
-                            className="flight-primary-button"
-                            onClick={() => navigate("/")}
-                        >
-                            Change search
+                        <button onClick={() => navigate("/home")}>
+                            Search Again
                         </button>
                     </div>
                 )}
 
-                {!loading && !error && sortedFlights.length > 0 && (
+                {!loading && !error && (
                     <div className="flight-list">
-                        {sortedFlights.map((flight) => (
-                            <article
-                                className="flight-card"
-                                key={flight.id}
-                            >
-                                <div className="flight-airline">
-                                    <span className="flight-plane-icon">
-                                        <Plane size={22} />
-                                    </span>
+                        {filteredFlights.map((flight) => (
+                            <article className="flight-card" key={flight.id}>
 
-                                    <div>
-                                        <strong>{flight.airline}</strong>
-                                        <small>{flight.code}</small>
+                                <div className="flight-card-top">
+                                    <div className="airline-info">
+                                        <div className="airline-icon">
+                                            <Plane size={23} />
+                                        </div>
+
+                                        <div>
+                                            <h3>{flight.airline}</h3>
+                                            <span>{flight.code}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flight-card-top">
+                                        <div className="airline-info">
+                                            <div className="airline-icon">
+                                                <Plane size={23} />
+                                            </div>
+
+                                            <div>
+                                                <h3>{flight.airline}</h3>
+                                                <span>{flight.code}</span>
+                                            </div>
+                                        </div>
+
+                                        <span className={`flight-status ${flight.status?.toLowerCase()}`}>
+                                            {flight.status}
+                                        </span>
                                     </div>
                                 </div>
 
-                                <div className="flight-timing">
-                                    <div>
-                                        <strong>{flight.departureTime}</strong>
-                                        <small>{flight.from}</small>
+                                <div className="flight-route">
+
+                                    <div className="route-point">
+                                        <h2>{formatTime(flight.departureTime)}</h2>
+                                        <h3>{flight.from}</h3>
+                                        <span>Departure</span>
                                     </div>
 
-                                    <div className="flight-duration">
-                                        <small>
-                                            <Clock3 size={13} />{" "}
-                                            {flight.duration}
-                                        </small>
-                                        <span />
-                                        <small>{flight.stops}</small>
+                                    <div className="route-middle">
+                                        <span>
+                                            <Clock3 size={14} />
+                                            {getDuration(
+                                                flight.departureTime,
+                                                flight.arrivalTime
+                                            )}
+                                        </span>
+
+                                        <div className="route-line">
+                                            <span></span>
+                                            <Plane size={19} />
+                                            <span></span>
+                                        </div>
+
+                                        <small>Direct Flight</small>
                                     </div>
 
-                                    <div>
-                                        <strong>{flight.arrivalTime}</strong>
-                                        <small>{flight.to}</small>
+                                    <div className="route-point route-destination">
+                                        <h2>{formatTime(flight.arrivalTime)}</h2>
+                                        <h3>{flight.to}</h3>
+                                        <span>Arrival</span>
                                     </div>
+
                                 </div>
 
-                                <div className="flight-baggage">
-                                    <Luggage size={17} />
-                                    <span>{flight.baggage} baggage</span>
+                                <div className="flight-card-bottom">
+
+                                    <div className="flight-features">
+                                        <span>
+                                            <Luggage size={16} /> Baggage
+                                        </span>
+
+                                        <span>
+                                            <Users size={16} /> {flight.availableSeats} Seats Left
+                                        </span>
+                                    </div>
+
+                                    <div className="flight-price">
+                                        <span>Price per passenger</span>
+                                        <h2>
+                                            ₹{flight.price.toLocaleString("en-IN")}
+                                        </h2>
+
+                                        <button
+                                            onClick={() => selectFlight(flight)}
+                                            disabled={flight.availableSeats < passengerCount}
+                                        >
+                                            Select Flight <ArrowRight size={17} />
+                                        </button>
+                                    </div>
+
                                 </div>
 
-                                <div className="flight-price">
-                                    <strong>
-                                        ₹{flight.price.toLocaleString("en-IN")}
-                                    </strong>
-                                    <small>per passenger</small>
-
-                                    <button
-                                        className="flight-primary-button"
-                                        onClick={() =>
-                                            navigate("/booking", {
-                                                state: {
-                                                    search,
-                                                    flight,
-                                                },
-                                            })
-                                        }
-                                    >
-                                        Select flight{" "}
-                                        <ArrowRight size={15} />
-                                    </button>
-                                </div>
                             </article>
                         ))}
                     </div>
                 )}
-            </section>
 
-            <footer className="flights-footer">
-                <Plane size={17} /> Aurelia Air · Travel beautifully.
-            </footer>
-        </main>
+            </main>
+        </div>
     );
 }
-
-export default Flights;

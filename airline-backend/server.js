@@ -6,6 +6,7 @@ import db from "./db.js";
 import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import axios from "axios";
 
 dotenv.config();
 
@@ -59,37 +60,80 @@ app.get("/", (req, res) => {
 
 
 // MySQL se flights fetch karne wali API
+
 app.get("/api/flights", async (req, res) => {
   try {
-    const [rows] = await db.query(`
+    const { from, to, date, passengers = 1, airline } = req.query;
+
+    const passengerCount = Number(passengers);
+
+    if (!Number.isInteger(passengerCount) || passengerCount < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid passenger count"
+      });
+    }
+
+    let sql = `
       SELECT
         id,
         airline,
         flight_code AS flightCode,
         origin AS \`from\`,
         destination AS \`to\`,
-        TIME_FORMAT(departure_time, '%H:%i') AS departureTime,
-        TIME_FORMAT(arrival_time, '%H:%i') AS arrivalTime,
+        DATE_FORMAT(flight_date, '%Y-%m-%d') AS flightDate,
+        DATE_FORMAT(departure_time, '%H:%i') AS departureTime,
+        DATE_FORMAT(arrival_time, '%H:%i') AS arrivalTime,
         price,
-        available_seats AS availableSeats
+        available_seats AS availableSeats,
+        status
       FROM flights
-      ORDER BY departure_time ASC
-    `);
+      WHERE status != 'CANCELLED'
+        AND available_seats >= ?
+    `;
+
+    const params = [passengerCount];
+
+    if (from) {
+      sql += " AND origin = ?";
+      params.push(from.toUpperCase());
+    }
+
+    if (to) {
+      sql += " AND destination = ?";
+      params.push(to.toUpperCase());
+    }
+
+    if (date) {
+      sql += " AND flight_date = ?";
+      params.push(date);
+    }
+
+    if (airline) {
+      sql += " AND airline = ?";
+      params.push(airline);
+    }
+
+    sql += " ORDER BY departure_time ASC";
+
+    const [flights] = await db.query(sql, params);
 
     res.json({
       success: true,
-      count: rows.length,
-      flights: rows,
+      count: flights.length,
+      flights
     });
+
   } catch (error) {
-    console.error("Flights fetch error:", error.message);
+    console.error("Flights API Error:", error);
 
     res.status(500).json({
       success: false,
-      message: "Unable to fetch flights from database.",
+      message: "Unable to fetch flights"
     });
   }
 });
+
 
 // ADMIN DASHBOARD STATISTICS
 app.get(
@@ -558,38 +602,49 @@ app.delete(
 
 // Demo booking API
 
+
 app.post("/api/bookings", async (req, res) => {
-  const { passenger, flightId } = req.body;
+  const { passenger, passengers, flightId } = req.body;
 
-  if (
-    !passenger ||
-    !passenger.name?.trim() ||
-    !passenger.age ||
-    !passenger.gender ||
-    !passenger.email?.trim() ||
-    !passenger.phone ||
-    !flightId
-  ) {
-    return res.status(400).json({
-      success: false,
-      message: "Please provide all passenger details and a valid flight ID.",
-    });
-  }
+  // Support both old single-passenger and new multiple-passenger format
+  const passengerList = Array.isArray(passengers)
+    ? passengers
+    : passenger
+      ? [passenger]
+      : [];
 
-  const age = Number(passenger.age);
   const id = Number(flightId);
 
   if (
-    !Number.isInteger(age) ||
-    age < 1 ||
-    age > 120 ||
+    passengerList.length < 1 ||
+    passengerList.length > 9 ||
     !Number.isInteger(id) ||
     id < 1
   ) {
     return res.status(400).json({
       success: false,
-      message: "Invalid passenger age or flight ID.",
+      message: "Provide valid passenger details and flight ID. Maximum 9 passengers allowed.",
     });
+  }
+
+  // Validate every passenger
+  for (const p of passengerList) {
+    const age = Number(p.age);
+
+    if (
+      !p.name?.trim() ||
+      !Number.isInteger(age) ||
+      age < 1 ||
+      age > 120 ||
+      !p.gender ||
+      !p.email?.trim() ||
+      !p.phone
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide valid details for every passenger.",
+      });
+    }
   }
 
   let connection;
@@ -598,8 +653,12 @@ app.post("/api/bookings", async (req, res) => {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
+    // Lock flight row to prevent simultaneous overbooking
     const [flights] = await connection.execute(
-      "SELECT id FROM flights WHERE id = ?",
+      `SELECT id, available_seats
+       FROM flights
+       WHERE id = ?
+       FOR UPDATE`,
       [id]
     );
 
@@ -612,57 +671,101 @@ app.post("/api/bookings", async (req, res) => {
       });
     }
 
-    const [passengerResult] = await connection.execute(
-      `INSERT INTO passengers
-       (full_name, age, gender, email, phone)
-       VALUES (?, ?, ?, ?, ?)`,
-      [
-        passenger.name.trim(),
-        age,
-        passenger.gender,
-        passenger.email.trim(),
-        passenger.phone,
-      ]
+    const availableSeats = Number(flights[0].available_seats);
+    const passengerCount = passengerList.length;
+
+    if (availableSeats < passengerCount) {
+      await connection.rollback();
+
+      return res.status(409).json({
+        success: false,
+        message: `Only ${availableSeats} seats are available.`,
+      });
+    }
+
+    // Reserve seats
+    await connection.execute(
+      `UPDATE flights
+       SET available_seats = available_seats - ?
+       WHERE id = ?`,
+      [passengerCount, id]
     );
 
-    const pnr = "AU" + randomBytes(4).toString("hex").toUpperCase();
+    // Insert all passengers
+    const passengerIds = [];
 
+    for (const p of passengerList) {
+      const [result] = await connection.execute(
+        `INSERT INTO passengers
+         (full_name, age, gender, email, phone)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          p.name.trim(),
+          Number(p.age),
+          p.gender,
+          p.email.trim(),
+          p.phone,
+        ]
+      );
+
+      passengerIds.push(result.insertId);
+    }
+
+    // Generate one PNR for the entire booking
+    const pnr =
+      "AU" + randomBytes(4).toString("hex").toUpperCase();
+
+    // Keep first passenger_id for compatibility with old queries
     const [bookingResult] = await connection.execute(
       `INSERT INTO bookings
-       (pnr, passenger_id, flight_id, booking_status)
-       VALUES (?, ?, ?, ?)`,
-      [pnr, passengerResult.insertId, id, "PENDING"]
+       (pnr, passenger_id, flight_id, booking_status, seats_released)
+       VALUES (?, ?, ?, 'PENDING', 0)`,
+      [pnr, passengerIds[0], id]
     );
+
+    const bookingId = bookingResult.insertId;
+
+    // Link every passenger to the same booking
+    for (const passengerId of passengerIds) {
+      await connection.execute(
+        `INSERT INTO booking_passengers
+         (booking_id, passenger_id)
+         VALUES (?, ?)`,
+        [bookingId, passengerId]
+      );
+    }
 
     await connection.commit();
 
     return res.status(201).json({
       success: true,
-      message: "Demo booking saved successfully!",
+      message: "Booking saved and seats reserved successfully!",
       booking: {
-        id: bookingResult.insertId,
+        id: bookingId,
         pnr,
-        passengerId: passengerResult.insertId,
+        passengerIds,
+        passengerCount,
         flightId: id,
         status: "PENDING",
       },
     });
+
   } catch (error) {
     if (connection) {
       await connection.rollback();
     }
 
-    console.error("Booking save error:", error.message);
+    console.error("Booking save error:", error);
 
     return res.status(500).json({
       success: false,
       message: "Unable to save booking. Please try again.",
     });
+
   } finally {
     connection?.release();
   }
 });
-
 
 
 // Find a booking using its PNR
@@ -974,13 +1077,36 @@ app.post("/api/payments", async (req, res) => {
 
     // Confirm booking only after successful demo payment
     if (paymentStatus === "SUCCESS") {
+
       await connection.execute(
         `UPDATE bookings
-         SET booking_status = 'CONFIRMED'
-         WHERE id = ?`,
+     SET booking_status = 'CONFIRMED'
+     WHERE id = ?`,
         [bookingId]
       );
+    } else {
+      // Release reserved seats only once
+      const [releaseResult] = await connection.execute(
+        `UPDATE bookings
+     SET booking_status = 'CANCELLED',
+         seats_released = 1
+     WHERE id = ?
+       AND seats_released = 0
+       AND booking_status = 'PENDING'`,
+        [bookingId]
+      );
+
+      if (releaseResult.affectedRows === 1) {
+        await connection.execute(
+          `UPDATE flights f
+       JOIN bookings b ON b.flight_id = f.id
+       SET f.available_seats = f.available_seats + ?
+       WHERE b.id = ?`,
+          [Number(passengerCount), bookingId]
+        );
+      }
     }
+
 
     await connection.commit();
 
@@ -1018,6 +1144,139 @@ app.post("/api/payments", async (req, res) => {
     }
   }
 });
+
+
+
+app.get("/api/track-flight/:flightNumber", async (req, res) => {
+  try {
+    const flightNumber = req.params.flightNumber.trim().toUpperCase();
+
+    if (!/^[A-Z0-9]{2,10}$/.test(flightNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: "Enter a valid flight number."
+      });
+    }
+
+    const apiKey = process.env.AIRLABS_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({
+        success: false,
+        message: "Flight tracking API is not configured."
+      });
+    }
+
+    // First: Search live or closest flight
+    const flightResponse = await axios.get(
+      "https://airlabs.co/api/v9/flight",
+      {
+        params: {
+          flight_iata: flightNumber,
+          api_key: apiKey
+        },
+        timeout: 15000
+      }
+    );
+
+    if (flightResponse.data?.error) {
+      throw new Error(
+        flightResponse.data.error.message || "AirLabs flight API error"
+      );
+    }
+
+    const liveFlight = flightResponse.data?.response;
+
+    if (liveFlight) {
+      return res.json({
+        success: true,
+        source: "flight",
+        livePositionAvailable:
+          liveFlight.lat != null && liveFlight.lng != null,
+        flight: {
+          flightNumber: liveFlight.flight_iata,
+          airline: liveFlight.airline_iata,
+          status: liveFlight.status,
+          departure: liveFlight.dep_iata,
+          arrival: liveFlight.arr_iata,
+          departureTime: liveFlight.dep_time,
+          arrivalTime: liveFlight.arr_time,
+          estimatedDeparture: liveFlight.dep_estimated,
+          estimatedArrival: liveFlight.arr_estimated,
+          latitude: liveFlight.lat,
+          longitude: liveFlight.lng,
+          altitude: liveFlight.alt,
+          speed: liveFlight.speed,
+          direction: liveFlight.dir,
+          aircraft: liveFlight.aircraft_icao
+        }
+      });
+    }
+
+    // Second: Search scheduled flights
+    const scheduleResponse = await axios.get(
+      "https://airlabs.co/api/v9/schedules",
+      {
+        params: {
+          flight_iata: flightNumber,
+          api_key: apiKey
+        },
+        timeout: 15000
+      }
+    );
+
+    if (scheduleResponse.data?.error) {
+      throw new Error(
+        scheduleResponse.data.error.message || "AirLabs schedules API error"
+      );
+    }
+
+    const schedules = scheduleResponse.data?.response;
+
+    if (!Array.isArray(schedules) || schedules.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No live or scheduled flight found for this number."
+      });
+    }
+
+    const scheduledFlight = schedules[0];
+
+    return res.json({
+      success: true,
+      source: "schedule",
+      livePositionAvailable: false,
+      flight: {
+        flightNumber: scheduledFlight.flight_iata,
+        airline: scheduledFlight.airline_iata,
+        status: scheduledFlight.status,
+        departure: scheduledFlight.dep_iata,
+        arrival: scheduledFlight.arr_iata,
+        departureTime: scheduledFlight.dep_time,
+        arrivalTime: scheduledFlight.arr_time,
+        estimatedDeparture: scheduledFlight.dep_estimated,
+        estimatedArrival: scheduledFlight.arr_estimated,
+        latitude: null,
+        longitude: null,
+        aircraft: scheduledFlight.aircraft_icao
+      }
+    });
+
+  } catch (error) {
+    console.error(
+      "Flight tracking error:",
+      error.response?.data || error.message
+    );
+
+    res.status(502).json({
+      success: false,
+      message: "Unable to retrieve flight information right now."
+    });
+  }
+});
+
+
+
 
 app.listen(PORT, () => {
   console.log(`Aurelia Air backend running at http://localhost:${PORT}`);

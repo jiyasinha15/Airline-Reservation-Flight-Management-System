@@ -600,13 +600,160 @@ app.delete(
 );
 
 
+app.get("/api/flights/:flightId/seats", async (req, res) => {
+  const flightId = Number(req.params.flightId);
+
+  if (!Number.isInteger(flightId) || flightId < 1) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid flight ID."
+    });
+  }
+
+  let connection;
+
+  try {
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    // Get flight and aircraft capacity
+    const [flights] = await connection.execute(
+      `SELECT f.id, f.aircraft_id, f.available_seats,
+                    a.seat_capacity
+             FROM flights f
+             LEFT JOIN aircraft a
+                ON f.aircraft_id = a.aircraft_id
+             WHERE f.id = ?
+             FOR UPDATE`,
+      [flightId]
+    );
+
+    if (flights.length === 0) {
+      await connection.rollback();
+
+      return res.status(404).json({
+        success: false,
+        message: "Flight not found."
+      });
+    }
+
+    const flight = flights[0];
+
+    if (!flight.seat_capacity) {
+      await connection.rollback();
+
+      return res.status(400).json({
+        success: false,
+        message: "Aircraft is not assigned to this flight."
+      });
+    }
+
+    const capacity = Number(flight.seat_capacity);
+
+    // Check whether seats have already been generated
+    const [existingSeats] = await connection.execute(
+      `SELECT COUNT(*) AS total
+             FROM flight_seats
+             WHERE flight_id = ?`,
+      [flightId]
+    );
+
+    if (Number(existingSeats[0].total) === 0) {
+
+      const columns = ["A", "B", "C", "D", "E", "F"];
+
+      for (let i = 0; i < capacity; i++) {
+        const row = Math.floor(i / 6) + 1;
+        const column = columns[i % 6];
+
+        let seatType;
+
+        if (column === "A" || column === "F") {
+          seatType = "WINDOW";
+        } else if (column === "B" || column === "E") {
+          seatType = "MIDDLE";
+        } else {
+          seatType = "AISLE";
+        }
+
+        await connection.execute(
+          `INSERT IGNORE INTO flight_seats
+                     (flight_id, seat_number, seat_type)
+                     VALUES (?, ?, ?)`,
+          [flightId, `${row}${column}`, seatType]
+        );
+      }
+
+      // Preserve seats already reserved by older bookings.
+      // Their exact seat numbers are not available in the old records.
+      const previouslyBooked = Math.max(
+        0,
+        capacity - Number(flight.available_seats)
+      );
+
+      if (previouslyBooked > 0) {
+        const [generatedSeats] = await connection.execute(
+          `SELECT seat_id
+                     FROM flight_seats
+                     WHERE flight_id = ?
+                     ORDER BY seat_id
+                     LIMIT ?`,
+          [flightId, previouslyBooked]
+        );
+
+        for (const seat of generatedSeats) {
+          await connection.execute(
+            `UPDATE flight_seats
+                         SET seat_status = 'BOOKED'
+                         WHERE seat_id = ?`,
+            [seat.seat_id]
+          );
+        }
+      }
+    }
+
+    const [seats] = await connection.execute(
+      `SELECT seat_id, seat_number, seat_type, seat_status
+             FROM flight_seats
+             WHERE flight_id = ?
+             ORDER BY CAST(
+                 SUBSTRING(seat_number, 1, LENGTH(seat_number) - 1)
+                 AS UNSIGNED
+             ), RIGHT(seat_number, 1)`,
+      [flightId]
+    );
+
+    await connection.commit();
+
+    return res.json({
+      success: true,
+      flightId,
+      totalSeats: capacity,
+      seats
+    });
+
+  } catch (error) {
+    if (connection) await connection.rollback();
+
+    console.error("Seat fetching error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch flight seats."
+    });
+
+  } finally {
+    connection?.release();
+  }
+});
+
 // Demo booking API
 
 
 app.post("/api/bookings", async (req, res) => {
-  const { passenger, passengers, flightId } = req.body;
+  const { passenger, passengers, flightId, seatNumbers } = req.body;
 
-  // Support both old single-passenger and new multiple-passenger format
+  // Support old single-passenger and multiple-passenger formats
   const passengerList = Array.isArray(passengers)
     ? passengers
     : passenger
@@ -615,6 +762,7 @@ app.post("/api/bookings", async (req, res) => {
 
   const id = Number(flightId);
 
+  // Basic validation
   if (
     passengerList.length < 1 ||
     passengerList.length > 9 ||
@@ -624,6 +772,21 @@ app.post("/api/bookings", async (req, res) => {
     return res.status(400).json({
       success: false,
       message: "Provide valid passenger details and flight ID. Maximum 9 passengers allowed.",
+    });
+  }
+
+  // Validate seat selection
+  if (
+    !Array.isArray(seatNumbers) ||
+    seatNumbers.length !== passengerList.length ||
+    new Set(seatNumbers).size !== seatNumbers.length ||
+    seatNumbers.some(
+      seat => typeof seat !== "string" || !seat.trim()
+    )
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Please select one unique seat for every passenger.",
     });
   }
 
@@ -653,52 +816,66 @@ app.post("/api/bookings", async (req, res) => {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    // Lock flight row to prevent simultaneous overbooking
+    // Lock flight row
     const [flights] = await connection.execute(
       `SELECT id, available_seats
-       FROM flights
-       WHERE id = ?
-       FOR UPDATE`,
+             FROM flights
+             WHERE id = ?
+             FOR UPDATE`,
       [id]
     );
 
     if (flights.length === 0) {
-      await connection.rollback();
-
-      return res.status(404).json({
-        success: false,
-        message: "Selected flight was not found.",
-      });
+      throw new Error("Selected flight was not found.");
     }
 
-    const availableSeats = Number(flights[0].available_seats);
     const passengerCount = passengerList.length;
+    const availableSeats = Number(flights[0].available_seats);
 
     if (availableSeats < passengerCount) {
-      await connection.rollback();
-
-      return res.status(409).json({
-        success: false,
-        message: `Only ${availableSeats} seats are available.`,
-      });
+      throw new Error(
+        `Only ${availableSeats} seats are available.`
+      );
     }
 
-    // Reserve seats
-    await connection.execute(
-      `UPDATE flights
-       SET available_seats = available_seats - ?
-       WHERE id = ?`,
-      [passengerCount, id]
+    // Lock selected seat rows
+    const placeholders = seatNumbers.map(() => "?").join(",");
+
+    const [selectedSeatRows] = await connection.execute(
+      `SELECT seat_id, seat_number, seat_status
+             FROM seats
+             WHERE flight_id = ?
+             AND seat_number IN (${placeholders})
+             FOR UPDATE`,
+      [id, ...seatNumbers]
     );
 
-    // Insert all passengers
+    // Check whether all requested seats exist
+    if (selectedSeatRows.length !== passengerCount) {
+      throw new Error(
+        "One or more selected seats do not exist for this flight."
+      );
+    }
+
+    // Check whether seats are still available
+    const unavailableSeats = selectedSeatRows.filter(
+      seat => seat.seat_status !== "AVAILABLE"
+    );
+
+    if (unavailableSeats.length > 0) {
+      throw new Error(
+        "Some selected seats have already been booked. Please select different seats."
+      );
+    }
+
+    // Insert passengers
     const passengerIds = [];
 
     for (const p of passengerList) {
       const [result] = await connection.execute(
         `INSERT INTO passengers
-         (full_name, age, gender, email, phone)
-         VALUES (?, ?, ?, ?, ?)`,
+                 (full_name, age, gender, email, phone)
+                 VALUES (?, ?, ?, ?, ?)`,
         [
           p.name.trim(),
           Number(p.age),
@@ -711,40 +888,75 @@ app.post("/api/bookings", async (req, res) => {
       passengerIds.push(result.insertId);
     }
 
-    // Generate one PNR for the entire booking
+    // Generate one PNR for the booking
     const pnr =
       "AU" + randomBytes(4).toString("hex").toUpperCase();
 
-    // Keep first passenger_id for compatibility with old queries
+    // Create booking
     const [bookingResult] = await connection.execute(
       `INSERT INTO bookings
-       (pnr, passenger_id, flight_id, booking_status, seats_released)
-       VALUES (?, ?, ?, 'PENDING', 0)`,
+             (pnr, passenger_id, flight_id, booking_status, seats_released)
+             VALUES (?, ?, ?, 'PENDING', 0)`,
       [pnr, passengerIds[0], id]
     );
 
     const bookingId = bookingResult.insertId;
 
-    // Link every passenger to the same booking
+    // Link all passengers to booking
     for (const passengerId of passengerIds) {
       await connection.execute(
         `INSERT INTO booking_passengers
-         (booking_id, passenger_id)
-         VALUES (?, ?)`,
+                 (booking_id, passenger_id)
+                 VALUES (?, ?)`,
         [bookingId, passengerId]
       );
     }
 
+    // Assign selected seats to their respective passengers
+    for (let i = 0; i < seatNumbers.length; i++) {
+      const [updateResult] = await connection.execute(
+        `UPDATE seats
+                 SET seat_status = 'BOOKED',
+                     booking_id = ?,
+                     passenger_id = ?
+                 WHERE flight_id = ?
+                 AND seat_number = ?
+                 AND seat_status = 'AVAILABLE'`,
+        [
+          bookingId,
+          passengerIds[i],
+          id,
+          seatNumbers[i],
+        ]
+      );
+
+      if (updateResult.affectedRows !== 1) {
+        throw new Error(
+          `Seat ${seatNumbers[i]} could not be reserved.`
+        );
+      }
+    }
+
+    // Update flight's available seat count
+    await connection.execute(
+      `UPDATE flights
+             SET available_seats = available_seats - ?
+             WHERE id = ?`,
+      [passengerCount, id]
+    );
+
+    // Commit transaction
     await connection.commit();
 
     return res.status(201).json({
       success: true,
-      message: "Booking saved and seats reserved successfully!",
+      message: "Booking and seats reserved successfully!",
       booking: {
         id: bookingId,
         pnr,
         passengerIds,
         passengerCount,
+        seatNumbers,
         flightId: id,
         status: "PENDING",
       },
@@ -757,9 +969,22 @@ app.post("/api/bookings", async (req, res) => {
 
     console.error("Booking save error:", error);
 
-    return res.status(500).json({
+    const clientErrors = [
+      "Selected flight was not found.",
+    ];
+
+    const isClientError =
+      clientErrors.includes(error.message) ||
+      error.message.startsWith("Only ") ||
+      error.message.startsWith("One or more") ||
+      error.message.startsWith("Some selected") ||
+      error.message.startsWith("Seat ");
+
+    return res.status(isClientError ? 409 : 500).json({
       success: false,
-      message: "Unable to save booking. Please try again.",
+      message: isClientError
+        ? error.message
+        : "Unable to save booking. Please try again.",
     });
 
   } finally {

@@ -7,7 +7,6 @@ import {
     Clock3,
     Luggage,
     ArrowRight,
-    ShieldCheck,
     RefreshCw,
     Users
 } from "lucide-react";
@@ -35,6 +34,7 @@ function formatTime(time) {
 
     const [hours, minutes] = time.split(":");
     const date = new Date();
+
     date.setHours(Number(hours), Number(minutes));
 
     return date.toLocaleTimeString("en-IN", {
@@ -55,11 +55,14 @@ export default function Flights() {
     const [error, setError] = useState("");
     const [sortBy, setSortBy] = useState("recommended");
 
+    const [airlineFilter, setAirlineFilter] = useState("all");
+    const [maxPrice, setMaxPrice] = useState(20000);
+    const [departureFilter, setDepartureFilter] = useState("all");
+
     const passengerCount = Math.max(
         1,
         Number(search.passengers || 1)
     );
-
 
     async function fetchFlights() {
         try {
@@ -101,7 +104,6 @@ export default function Flights() {
         }
     }
 
-
     useEffect(() => {
         fetchFlights();
     }, [search.from, search.to, search.departure, passengerCount]);
@@ -127,17 +129,64 @@ export default function Flights() {
             (flight) => flight.availableSeats >= passengerCount
         );
 
+        if (airlineFilter !== "all") {
+            result = result.filter(
+                (flight) => flight.airline === airlineFilter
+            );
+        }
+
+        result = result.filter(
+            (flight) => flight.price <= maxPrice
+        );
+
+        if (departureFilter !== "all") {
+            result = result.filter((flight) => {
+                const hour = Number(
+                    flight.departureTime?.split(":")[0]
+                );
+
+                if (departureFilter === "morning") return hour >= 5 && hour < 12;
+                if (departureFilter === "afternoon") return hour >= 12 && hour < 17;
+                if (departureFilter === "evening") return hour >= 17 && hour < 21;
+                if (departureFilter === "night") return hour >= 21 || hour < 5;
+
+                return true;
+            });
+        }
+
         if (sortBy === "price") {
             result.sort((a, b) => a.price - b.price);
+
         } else if (sortBy === "duration") {
-            result.sort(
-                (a, b) =>
-                    a.departureTime.localeCompare(b.departureTime)
+            const getMinutes = (flight) => {
+                const [dh, dm] = flight.departureTime.split(":").map(Number);
+                const [ah, am] = flight.arrivalTime.split(":").map(Number);
+
+                let duration = (ah * 60 + am) - (dh * 60 + dm);
+
+                return duration < 0 ? duration + 1440 : duration;
+            };
+
+            result.sort((a, b) => getMinutes(a) - getMinutes(b));
+
+        } else {
+            result.sort((a, b) =>
+                a.departureTime.localeCompare(b.departureTime)
             );
         }
 
         return result;
-    }, [flights, search.from, search.to, passengerCount, sortBy]);
+
+    }, [
+        flights,
+        search.from,
+        search.to,
+        passengerCount,
+        sortBy,
+        airlineFilter,
+        maxPrice,
+        departureFilter
+    ]);
 
     function selectFlight(flight) {
         navigate("/booking", {
@@ -169,9 +218,15 @@ export default function Flights() {
             <main className="flights-container">
 
                 <section className="flights-heading">
-                    <span className="section-tag">YOUR JOURNEY STARTS HERE</span>
+                    <span className="section-tag">
+                        YOUR JOURNEY STARTS HERE
+                    </span>
+
                     <h1>Available <span>Flights</span></h1>
-                    <p>Choose your preferred flight and get ready to fly.</p>
+
+                    <p>
+                        Choose your preferred flight and get ready to fly.
+                    </p>
                 </section>
 
                 <section className="flight-search-summary">
@@ -215,9 +270,62 @@ export default function Flights() {
                     >
                         <option value="recommended">Recommended</option>
                         <option value="price">Lowest Price</option>
-                        <option value="duration">Departure Time</option>
+                        <option value="duration">Shortest Duration</option>
                     </select>
                 </section>
+
+                <div className="flight-filters">
+
+                    <select
+                        value={airlineFilter}
+                        onChange={(e) => setAirlineFilter(e.target.value)}
+                    >
+                        <option value="all">All Airlines</option>
+
+                        {[...new Set(flights.map((f) => f.airline))].map((airline) => (
+                            <option key={airline} value={airline}>
+                                {airline}
+                            </option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={departureFilter}
+                        onChange={(e) => setDepartureFilter(e.target.value)}
+                    >
+                        <option value="all">Any Departure</option>
+                        <option value="morning">Morning (5 AM–12 PM)</option>
+                        <option value="afternoon">Afternoon (12 PM–5 PM)</option>
+                        <option value="evening">Evening (5 PM–9 PM)</option>
+                        <option value="night">Night (9 PM–5 AM)</option>
+                    </select>
+
+                    <label className="price-filter">
+                        Maximum Price: ₹{maxPrice.toLocaleString("en-IN")}
+
+                        <input
+                            type="range"
+                            min="1000"
+                            max="20000"
+                            step="500"
+                            value={maxPrice}
+                            onChange={(e) => setMaxPrice(Number(e.target.value))}
+                        />
+                    </label>
+
+                    <button
+                        className="reset-filters"
+                        onClick={() => {
+                            setAirlineFilter("all");
+                            setDepartureFilter("all");
+                            setMaxPrice(20000);
+                            setSortBy("recommended");
+                        }}
+                    >
+                        Reset Filters
+                    </button>
+
+                </div>
 
                 {loading && (
                     <div className="flight-message">
@@ -230,6 +338,7 @@ export default function Flights() {
                     <div className="flight-message error-message">
                         <h3>Something went wrong</h3>
                         <p>{error}</p>
+
                         <button onClick={fetchFlights}>
                             <RefreshCw size={17} /> Try Again
                         </button>
@@ -240,18 +349,21 @@ export default function Flights() {
                     <div className="flight-message">
                         <Plane size={35} />
                         <h3>No Flights Found</h3>
+
                         <p>
                             Is route par abhi koi flight available nahi hai,
                             ya selected passengers ke liye seats nahi hain.
                         </p>
+
                         <button onClick={() => navigate("/home")}>
                             Search Again
                         </button>
                     </div>
                 )}
 
-                {!loading && !error && (
+                {!loading && !error && filteredFlights.length > 0 && (
                     <div className="flight-list">
+
                         {filteredFlights.map((flight) => (
                             <article className="flight-card" key={flight.id}>
 
@@ -267,22 +379,9 @@ export default function Flights() {
                                         </div>
                                     </div>
 
-                                    <div className="flight-card-top">
-                                        <div className="airline-info">
-                                            <div className="airline-icon">
-                                                <Plane size={23} />
-                                            </div>
-
-                                            <div>
-                                                <h3>{flight.airline}</h3>
-                                                <span>{flight.code}</span>
-                                            </div>
-                                        </div>
-
-                                        <span className={`flight-status ${flight.status?.toLowerCase()}`}>
-                                            {flight.status}
-                                        </span>
-                                    </div>
+                                    <span className={`flight-status ${flight.status?.toLowerCase()}`}>
+                                        {flight.status}
+                                    </span>
                                 </div>
 
                                 <div className="flight-route">
@@ -327,12 +426,14 @@ export default function Flights() {
                                         </span>
 
                                         <span>
-                                            <Users size={16} /> {flight.availableSeats} Seats Left
+                                            <Users size={16} />
+                                            {flight.availableSeats} Seats Left
                                         </span>
                                     </div>
 
                                     <div className="flight-price">
                                         <span>Price per passenger</span>
+
                                         <h2>
                                             ₹{flight.price.toLocaleString("en-IN")}
                                         </h2>
@@ -349,6 +450,7 @@ export default function Flights() {
 
                             </article>
                         ))}
+
                     </div>
                 )}
 

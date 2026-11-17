@@ -203,7 +203,7 @@ export default function Flights() {
             <header className="flights-header">
                 <button
                     className="back-button"
-                    onClick={() => navigate("/home")}
+                    onClick={() => navigate("/")}
                 >
                     <ArrowLeft size={18} />
                     Back to Home
@@ -355,7 +355,7 @@ export default function Flights() {
                             ya selected passengers ke liye seats nahi hain.
                         </p>
 
-                        <button onClick={() => navigate("/home")}>
+                        <button onClick={() => navigate("/")}>
                             Search Again
                         </button>
                     </div>

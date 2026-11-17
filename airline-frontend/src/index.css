@@ -2362,3 +2362,1634 @@ button {
   }
 }
 
+
+.passenger-counter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 4px 8px;
+  border: 1px solid #34435b;
+  border-radius: 8px;
+  background: #0b1426;
+}
+
+.passenger-counter > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #e4bd62;
+}
+
+.passenger-counter strong {
+  color: #fff;
+  font-size: 16px;
+}
+
+.passenger-counter small {
+  color: #b7c0ce;
+  font-size: 12px;
+}
+
+.passenger-counter button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #d5ad58;
+  border-radius: 6px;
+  background: transparent;
+  color: #e5bd62;
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.passenger-counter button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.passenger-counter button:not(:disabled):hover {
+  background: #d5ad58;
+  color: #101b30;
+}
+
+
+/* =========================================
+   AURELIA AIR - PREMIUM DESIGN UPGRADE
+========================================= */
+
+:root {
+  --navy: #101d30;
+  --navy-light: #1c2d45;
+  --gold: #d9b77b;
+  --gold-dark: #bd9451;
+  --cream: #f8f7f3;
+  --muted: #778191;
+  --border: #e9e6df;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 85px;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  overflow-x: hidden;
+  font-family: "DM Sans", sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  text-decoration: none;
+}
+
+/* =========================================
+   GLOBAL
+========================================= */
+
+.site-shell {
+  width: 100%;
+  overflow: hidden;
+}
+
+section {
+  scroll-margin-top: 80px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--gold-dark);
+  outline-offset: 3px;
+}
+
+img {
+  max-width: 100%;
+}
+
+/* =========================================
+   TOP STRIP
+========================================= */
+
+.top-strip {
+  min-height: 36px;
+  padding: 8px 7.2%;
+  background: #0b1524;
+  color: #d6dbe3;
+  font-size: 11px;
+}
+
+/* =========================================
+   NAVBAR
+========================================= */
+
+.navbar {
+  min-height: 82px;
+  height: auto;
+  padding: 12px 7.2%;
+  background: rgba(255,255,255,0.97);
+  box-shadow: 0 4px 20px rgba(16,29,48,0.04);
+  position: relative;
+  z-index: 20;
+}
+
+.brand {
+  gap: 12px;
+}
+
+.brand-mark {
+  width: 46px;
+  height: 46px;
+  transition: transform .3s ease;
+}
+
+.brand:hover .brand-mark {
+  transform: rotate(0deg);
+}
+
+.nav-links {
+  gap: 27px;
+}
+
+.nav-links a {
+  position: relative;
+  font-weight: 500;
+  transition: color .25s ease;
+}
+
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--gold-dark);
+  transition: width .25s ease;
+}
+
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+.nav-actions button {
+  border: 0;
+  background: transparent;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.nav-button {
+  border-radius: 3px;
+}
+
+/* =========================================
+   HERO SECTION
+========================================= */
+
+.hero {
+  min-height: 570px;
+  height: min(680px, 68vw);
+  background: var(--navy);
+}
+
+.hero-image {
+  background-position: center;
+  background-size: cover;
+}
+
+.hero-overlay {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(8,18,32,.96),
+      rgba(8,18,32,.75) 43%,
+      rgba(8,18,32,.15)
+    ),
+    linear-gradient(
+      0deg,
+      rgba(8,18,32,.5),
+      transparent 45%
+    );
+}
+
+.hero-content {
+  max-width: 720px;
+  padding-left: 10%;
+}
+
+.hero h1 {
+  font-size: clamp(46px, 6vw, 78px);
+  line-height: 1.12;
+  letter-spacing: -2px;
+}
+
+.hero-description {
+  max-width: 440px;
+  font-size: 14px;
+  line-height: 1.9;
+}
+
+.hero-buttons {
+  gap: 20px;
+}
+
+.gold-button {
+  min-height: 49px;
+  padding: 0 25px;
+  border-radius: 3px;
+}
+
+.text-button:hover {
+  color: var(--gold);
+}
+
+.hero-note {
+  margin-top: 40px;
+}
+
+.hero-bottom {
+  bottom: 25px;
+}
+
+/* =========================================
+   BOOKING SECTION
+========================================= */
+
+.booking-section {
+  padding: 75px 7.2% 85px;
+  background: var(--cream);
+}
+
+.section-heading {
+  margin-bottom: 30px;
+}
+
+.section-heading h2,
+.benefits-intro h2 {
+  line-height: 1.3;
+}
+
+.search-card {
+  padding: 28px;
+  border-radius: 5px;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: 0 15px 45px rgba(16,29,48,.065);
+  transition: box-shadow .3s ease;
+}
+
+.search-card:hover {
+  box-shadow: 0 18px 50px rgba(16,29,48,.09);
+}
+
+.trip-options {
+  min-height: 48px;
+}
+
+.trip-option {
+  cursor: pointer;
+}
+
+.search-fields {
+  grid-template-columns:
+    minmax(0,1.1fr)
+    minmax(0,1.1fr)
+    minmax(0,1fr)
+    minmax(0,1fr)
+    minmax(0,1fr);
+  padding-top: 27px;
+}
+
+.field {
+  padding: 0 17px;
+  min-height: 80px;
+  justify-content: flex-start;
+}
+
+.field-label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+}
+
+.field-value {
+  min-height: 35px;
+}
+
+.field select,
+.field input {
+  font-size: 12px;
+}
+
+.field select:focus,
+.field input:focus {
+  color: var(--navy);
+}
+
+.search-footer {
+  margin-top: 25px;
+  padding-top: 22px;
+}
+
+.search-button {
+  min-height: 49px;
+  padding: 0 26px;
+  border-radius: 3px;
+  transition: all .25s ease;
+}
+
+.search-button:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--navy);
+  transform: translateY(-2px);
+}
+
+.notice-message {
+  border-radius: 3px;
+}
+
+/* =========================================
+   PASSENGER COUNTER
+========================================= */
+
+.passenger-counter {
+  width: 100%;
+  min-height: 48px;
+  padding: 5px 8px;
+  border: 1px solid #dce0e6;
+  border-radius: 6px;
+  background: #fdfdfd;
+  gap: 5px;
+}
+
+.passenger-counter > span {
+  flex: 1;
+  gap: 6px;
+  color: var(--gold-dark);
+  white-space: nowrap;
+}
+
+.passenger-counter strong {
+  color: var(--navy);
+  font-size: 15px;
+}
+
+.passenger-counter small {
+  color: #667386;
+  font-size: 11px;
+}
+
+.passenger-counter button {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--gold-dark);
+  border-radius: 6px;
+  background: white;
+  color: var(--navy);
+  transition: all .2s ease;
+}
+
+.passenger-counter button:not(:disabled):hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--navy);
+}
+
+.passenger-counter button:disabled {
+  opacity: .4;
+}
+
+/* =========================================
+   DESTINATIONS
+========================================= */
+
+.destinations-section {
+  padding: 85px 7.2%;
+  background: #fff;
+}
+
+.destination-grid {
+  gap: 27px;
+}
+
+.destination-card {
+  border-radius: 5px;
+  overflow: hidden;
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+
+.destination-card:hover {
+  transform: translateY(-7px);
+  box-shadow: 0 18px 40px rgba(16,29,48,.12);
+}
+
+.destination-image-wrap {
+  height: 250px;
+}
+
+.destination-image {
+  transition: transform .7s ease;
+}
+
+.destination-card:hover .destination-image {
+  transform: scale(1.07);
+}
+
+.destination-info {
+  padding: 22px 20px 17px;
+}
+
+.destination-info h3 {
+  font-size: 24px;
+}
+
+.destination-price strong {
+  color: var(--gold-dark);
+  font-size: 14px;
+}
+
+.destination-link {
+  margin: 0 20px;
+  padding: 16px 0;
+  transition: color .2s ease;
+}
+
+.destination-link:hover {
+  color: var(--gold-dark);
+}
+
+/* =========================================
+   BENEFITS
+========================================= */
+
+.benefits-section {
+  padding: 90px 7.2%;
+  gap: 75px;
+  background: #f3f1eb;
+}
+
+.benefits-grid {
+  gap: 38px;
+}
+
+.benefit-card {
+  padding: 15px;
+  border-radius: 5px;
+  transition: background .25s ease, transform .25s ease;
+}
+
+.benefit-card:hover {
+  background: white;
+  transform: translateY(-4px);
+}
+
+.benefit-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 3px;
+}
+
+.benefit-card h3 {
+  font-size: 14px;
+}
+
+.benefit-card p {
+  font-size: 12px;
+}
+
+/* =========================================
+   CLOSING BANNER
+========================================= */
+
+.closing-banner {
+  padding: 60px 7.2%;
+  background:
+    linear-gradient(110deg,#101d30,#1c304b);
+}
+
+.closing-banner .gold-button {
+  border-radius: 3px;
+}
+
+/* =========================================
+   FOOTER
+========================================= */
+
+.footer {
+  padding: 45px 7.2% 22px;
+  background: #091321;
+}
+
+.footer-main {
+  padding-bottom: 32px;
+}
+
+.footer-main > p {
+  font-size: 17px;
+}
+
+.back-top {
+  transition: color .2s ease;
+}
+
+.back-top:hover {
+  color: white;
+}
+
+.footer-bottom {
+  font-size: 10px;
+}
+
+/* =========================================
+   TABLET RESPONSIVENESS
+========================================= */
+
+@media (max-width: 1100px) {
+
+  .navbar {
+    padding: 15px 4%;
+  }
+
+  .nav-links {
+    gap: 15px;
+  }
+
+  .nav-links a {
+    font-size: 11px;
+  }
+
+  .nav-actions {
+    gap: 12px;
+  }
+
+  .hero-content {
+    padding-left: 7%;
+  }
+
+  .booking-section,
+  .destinations-section,
+  .benefits-section,
+  .closing-banner,
+  .footer {
+    padding-left: 5%;
+    padding-right: 5%;
+  }
+
+  .search-fields {
+    grid-template-columns: repeat(3,minmax(0,1fr));
+    gap: 25px 0;
+  }
+
+  .field:nth-child(3) {
+    border-right: 0;
+  }
+
+  .field:nth-child(4) {
+    padding-left: 0;
+  }
+
+  .destination-grid {
+    gap: 18px;
+  }
+
+  .benefits-section {
+    gap: 35px;
+  }
+}
+
+/* =========================================
+   MOBILE NAVIGATION
+========================================= */
+
+@media (max-width: 768px) {
+
+  .top-strip {
+    padding: 9px 4%;
+    font-size: 9px;
+  }
+
+  .top-strip-right {
+    display: none !important;
+  }
+
+  .navbar {
+    min-height: 72px;
+    padding: 12px 5%;
+  }
+
+  .brand-copy strong {
+    font-size: 17px;
+  }
+
+  .mobile-menu {
+    display: block;
+    margin-left: auto;
+    padding: 8px;
+    font-size: 23px;
+  }
+
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 22px 6%;
+    background: white;
+    box-shadow: 0 15px 25px rgba(0,0,0,.10);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 23px;
+  }
+
+  .nav-links.nav-open {
+    display: flex;
+  }
+
+  .nav-links a {
+    font-size: 13px;
+  }
+
+  .nav-actions {
+    display: none;
+  }
+
+  /* Hero */
+
+  .hero {
+    min-height: 590px;
+    height: auto;
+  }
+
+  .hero-content {
+    padding: 65px 7% 90px;
+  }
+
+  .hero h1 {
+    font-size: clamp(43px,10vw,62px);
+  }
+
+  .hero-description {
+    font-size: 13px;
+  }
+
+  .hero-side-label {
+    display: none;
+  }
+
+  .hero-bottom {
+    left: 7%;
+    right: 7%;
+    font-size: 8px;
+  }
+
+  .hero-note {
+    margin-top: 35px;
+  }
+
+  /* Booking */
+
+  .booking-section {
+    padding: 55px 5%;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .section-heading h2 {
+    font-size: 30px;
+  }
+
+  .booking-caption {
+    padding: 0;
+  }
+
+  .search-card {
+    padding: 19px;
+  }
+
+  .trip-options {
+    gap: 17px;
+    flex-wrap: wrap;
+  }
+
+  .search-fields {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 24px 0;
+  }
+
+  .field {
+    padding: 0 10px;
+    border-right: 0;
+    min-height: 75px;
+  }
+
+  .field:nth-child(odd) {
+    padding-left: 0;
+  }
+
+  .field-value {
+    gap: 6px;
+  }
+
+  .field select,
+  .field input {
+    font-size: 11px;
+  }
+
+  .search-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .search-button {
+    width: 100%;
+  }
+
+  /* Destinations */
+
+  .destinations-section {
+    padding: 60px 5%;
+  }
+
+  .destination-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .destination-image-wrap {
+    height: 240px;
+  }
+
+  /* Benefits */
+
+  .benefits-section {
+    grid-template-columns: 1fr;
+    padding: 60px 5%;
+    gap: 35px;
+  }
+
+  .benefits-grid {
+    gap: 20px;
+  }
+
+  /* Closing */
+
+  .closing-banner {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 45px 6%;
+  }
+
+  /* Footer */
+
+  .footer {
+    padding: 35px 6% 20px;
+  }
+
+  .footer-main {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* =========================================
+   SMALL MOBILE
+========================================= */
+
+@media (max-width: 480px) {
+
+  .hero {
+    min-height: 550px;
+  }
+
+  .hero-content {
+    padding-left: 6%;
+    padding-right: 6%;
+  }
+
+  .hero h1 {
+    font-size: 43px;
+  }
+
+  .hero-buttons {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 17px;
+  }
+
+  .section-heading h2 {
+    font-size: 27px;
+  }
+
+  .search-card {
+    padding: 15px;
+  }
+
+  .search-fields {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .field,
+  .field:nth-child(odd),
+  .field:nth-child(4) {
+    padding: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 14px;
+  }
+
+  .field:last-child {
+    border-bottom: 0;
+  }
+
+  .passenger-counter {
+    max-width: 100%;
+  }
+
+  .benefits-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .benefit-card {
+    padding: 15px 10px;
+  }
+
+  .destination-image-wrap {
+    height: 210px;
+  }
+
+  .footer-main > p {
+    font-size: 14px;
+  }
+}
+
+/* =========================================
+   ACCESSIBILITY
+========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+
+/* =====================================
+   AURELIA AIR - RESPONSIVE DESIGN
+===================================== */
+
+/* Large laptops and tablets */
+@media screen and (max-width: 1200px) {
+
+  .navbar {
+    padding: 18px 5%;
+  }
+
+  .nav-links {
+    gap: 20px;
+  }
+
+  .nav-actions {
+    gap: 12px;
+  }
+
+  .hero-content {
+    padding-left: 7%;
+  }
+
+  .booking-section,
+  .destinations-section,
+  .benefits-section,
+  .closing-banner {
+    padding-left: 6%;
+    padding-right: 6%;
+  }
+
+  .search-fields {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .field {
+    min-width: 0;
+  }
+
+  .swap-button {
+    display: none;
+  }
+
+  .destination-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* Tablets */
+@media screen and (max-width: 900px) {
+
+  .navbar {
+    flex-wrap: wrap;
+  }
+
+  .nav-links {
+    gap: 14px;
+  }
+
+  .nav-actions button,
+  .nav-actions .nav-button {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+
+  .hero {
+    min-height: 620px;
+  }
+
+  .hero-content {
+    max-width: 600px;
+  }
+
+  .hero-content h1 {
+    font-size: clamp(42px, 7vw, 65px);
+  }
+
+  .section-heading h2 {
+    font-size: 36px;
+  }
+
+  .search-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .search-footer {
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  .benefits-section {
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+
+  .benefits-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .closing-banner {
+    gap: 25px;
+  }
+}
+
+
+/* Mobile navigation */
+@media screen and (max-width: 700px) {
+
+  .navbar {
+    position: relative;
+    padding: 16px 5%;
+  }
+
+  .mobile-menu {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+  }
+
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: 15px 6%;
+    background: #101b30;
+    z-index: 1000;
+  }
+
+  .nav-links.nav-open {
+    display: flex;
+  }
+
+  .nav-links a {
+    width: 100%;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .nav-actions {
+    display: none;
+  }
+
+  .hero {
+    min-height: 570px;
+  }
+
+  .hero-content {
+    padding: 80px 6% 60px;
+  }
+
+  .hero-content h1 {
+    font-size: clamp(38px, 9vw, 54px);
+  }
+
+  .hero-description {
+    font-size: 15px;
+    max-width: 100%;
+  }
+
+  .hero-buttons {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .hero-bottom {
+    padding: 0 6% 20px;
+    font-size: 10px;
+  }
+
+  .hero-side-label {
+    display: none;
+  }
+
+  .booking-section,
+  .destinations-section,
+  .benefits-section {
+    padding: 65px 5%;
+  }
+
+  .section-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .section-heading h2 {
+    font-size: 32px;
+  }
+
+  .search-card {
+    padding: 20px 16px;
+  }
+
+  .trip-options {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .search-fields {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .field {
+    padding: 17px 0;
+    border-right: none;
+    border-bottom: 1px solid #e8e3da;
+  }
+
+  .field-value {
+    width: 100%;
+  }
+
+  .field-value select,
+  .field-value input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .search-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .booking-caption {
+    font-size: 12px;
+  }
+
+  .destination-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .destination-image-wrap {
+    height: 260px;
+  }
+
+  .benefits-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .closing-banner {
+    margin: 20px 5%;
+    padding: 35px 25px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .closing-banner h2 {
+    font-size: 32px;
+  }
+
+  .footer {
+    padding: 35px 5% 20px;
+  }
+
+  .footer-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+  }
+}
+
+
+/* Small mobile screens */
+@media screen and (max-width: 480px) {
+
+  .top-strip {
+    font-size: 10px;
+    padding: 9px 4%;
+  }
+
+  .top-strip-right {
+    display: none;
+  }
+
+  .brand-copy strong {
+    font-size: 17px;
+  }
+
+  .hero {
+    min-height: 540px;
+  }
+
+  .hero-content {
+    padding-top: 65px;
+  }
+
+  .hero-content h1 {
+    font-size: 39px;
+    line-height: 1.15;
+  }
+
+  .hero-buttons a {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hero-note {
+    margin-top: 30px;
+  }
+
+  .section-heading h2 {
+    font-size: 28px;
+  }
+
+  .search-card {
+    padding: 18px 13px;
+  }
+
+  .trip-option {
+    font-size: 13px;
+  }
+
+  .field-value select,
+  .field-value input {
+    font-size: 13px;
+  }
+
+  .destination-image-wrap {
+    height: 220px;
+  }
+
+  .destination-info {
+    gap: 10px;
+  }
+
+  .destination-price strong {
+    font-size: 15px;
+  }
+
+  .benefit-card {
+    padding: 22px;
+  }
+
+  .closing-banner h2 {
+    font-size: 27px;
+  }
+
+  .footer-bottom {
+    font-size: 11px;
+  }
+}
+
+
+/* Prevent horizontal overflow */
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+.mobile-menu {
+  display: none;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+
+/* ==========================================
+   AURELIA AIR - PREMIUM BOOKING SECTION
+========================================== */
+
+.booking-section {
+    padding: 100px 7%;
+    background:
+        radial-gradient(ellipse at 10% 10%,
+        rgba(218, 177, 103, 0.08), transparent 45%),
+        #f8f7f3;
+    position: relative;
+}
+
+/* Section heading */
+
+.section-heading {
+    margin-bottom: 35px;
+}
+
+.section-kicker {
+    color: #b8873d;
+    letter-spacing: 3px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.section-heading h2 {
+    font-family: Georgia, serif;
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 500;
+    color: #101c30;
+    letter-spacing: -1.2px;
+    margin-top: 12px;
+}
+
+.booking-caption {
+    color: #71806f;
+    font-size: 13px;
+    letter-spacing: .3px;
+}
+
+/* Main booking card */
+
+.search-card {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(
+        135deg,
+        #ffffff 0%,
+        #fffdf9 100%
+    );
+    border: 1px solid #e8e1d5;
+    border-radius: 18px;
+    padding: 35px;
+    box-shadow:
+        0 25px 70px rgba(18, 29, 47, 0.07),
+        0 4px 12px rgba(18, 29, 47, 0.025);
+    transition: box-shadow .3s ease,
+                transform .3s ease;
+}
+
+.search-card:hover {
+    box-shadow:
+        0 30px 85px rgba(18, 29, 47, 0.11);
+}
+
+/* Gold top accent */
+
+.search-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(
+        90deg,
+        #a87931,
+        #e8c77d,
+        #a87931
+    );
+}
+
+/* Trip options */
+
+.trip-options {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #eae5db;
+}
+
+.trip-option {
+    color: #788294;
+    font-size: 14px;
+    transition: color .25s ease;
+}
+
+.trip-option.active {
+    color: #142139;
+    font-weight: 700;
+}
+
+.trip-radio {
+    border-color: #c9c4ba;
+    transition: all .25s ease;
+}
+
+.trip-option.active .trip-radio {
+    border-color: #bd9148;
+    box-shadow: inset 0 0 0 4px #fff;
+    background: #bd9148;
+}
+
+.cabin-label {
+    color: #b58a43;
+    font-size: 13px;
+    margin-left: auto;
+}
+
+/* Search fields */
+
+.search-fields {
+    padding: 32px 0;
+    gap: 15px;
+}
+
+.field {
+    padding: 5px 16px;
+    border-right: 1px solid #eee9e0;
+    transition: background .25s ease;
+}
+
+.field:hover {
+    background: rgba(220, 187, 126, .07);
+    border-radius: 8px;
+}
+
+.field-label {
+    color: #8991a0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 13px;
+}
+
+.field-value {
+    gap: 10px;
+}
+
+.field-value svg {
+    color: #b88b43;
+    flex-shrink: 0;
+}
+
+.field-value select,
+.field-value input {
+    color: #142139;
+    font-size: 14px;
+    font-weight: 600;
+    background: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+}
+
+.field-value select:focus,
+.field-value input:focus {
+    color: #a77a32;
+}
+
+/* Swap button */
+
+.swap-button {
+    background: #fff;
+    color: #bd9148;
+    border: 1px solid #e8d8b9;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    transition: all .3s ease;
+}
+
+.swap-button:hover {
+    background: #142139;
+    color: #e6c47c;
+    transform: rotate(180deg);
+}
+
+/* Passenger selector */
+
+.passenger-field {
+    border-right: 1px solid #eee9e0;
+}
+
+.passenger-field .field-value {
+    border: 1px solid #e6dfd2;
+    border-radius: 10px;
+    padding: 11px;
+    background: #fff;
+}
+
+.passenger-field .field-value:focus-within {
+    border-color: #c39a52;
+    box-shadow: 0 0 0 3px rgba(195,154,82,.12);
+}
+
+/* Search footer */
+
+.search-footer {
+    padding-top: 27px;
+    border-top: 1px solid #eae5db;
+}
+
+.search-hint {
+    color: #829080;
+    font-size: 12px;
+}
+
+.search-hint svg {
+    color: #719078;
+}
+
+/* Premium search button */
+
+.search-button {
+    background: linear-gradient(
+        135deg,
+        #17253c,
+        #0b1425
+    );
+    color: #fff;
+    border: 1px solid #263650;
+    border-radius: 8px;
+    padding: 17px 30px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    box-shadow: 0 7px 18px rgba(12, 24, 43, .15);
+    transition: all .3s ease;
+}
+
+.search-button:hover {
+    background: linear-gradient(
+        135deg,
+        #c49a51,
+        #a77b35
+    );
+    color: #101c30;
+    border-color: #c49a51;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(181, 138, 67, .25);
+}
+
+.search-button:active {
+    transform: translateY(0);
+}
+
+/* Notice */
+
+.notice-message {
+    margin-top: 20px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: #fff4e8;
+    color: #98652d;
+    font-size: 13px;
+}
+
+/* Responsive */
+
+@media(max-width: 900px) {
+    .booking-section {
+        padding: 75px 5%;
+    }
+
+    .search-card {
+        padding: 25px;
+    }
+
+    .search-fields {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media(max-width: 600px) {
+    .booking-section {
+        padding: 55px 5%;
+    }
+
+    .section-heading h2 {
+        font-size: 32px;
+    }
+
+    .search-card {
+        padding: 24px 17px;
+        border-radius: 14px;
+    }
+
+    .trip-options {
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .search-fields {
+        grid-template-columns: 1fr;
+        padding: 20px 0;
+    }
+
+    .field {
+        border-right: none;
+        border-bottom: 1px solid #eee9e0;
+        padding: 17px 8px;
+    }
+
+    .search-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .cabin-label {
+        margin-left: auto;
+    }
+}

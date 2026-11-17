@@ -1,0 +1,168 @@
+
+.seat-selection {
+  background: #101b30;
+  border: 1px solid #293750;
+  border-radius: 18px;
+  padding: 25px;
+  color: #fff;
+  margin: 25px 0;
+}
+
+.seat-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.seat-heading h2 {
+  margin: 0;
+  color: #e8c779;
+}
+
+.seat-heading p {
+  color: #aab5c7;
+}
+
+.seat-refresh {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #d5ad58;
+  background: transparent;
+  color: #e8c779;
+  cursor: pointer;
+}
+
+.seat-legend {
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  flex-wrap: wrap;
+  margin: 25px 0;
+  font-size: 13px;
+}
+
+.seat-legend span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.seat-legend i {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.available { background: #243d52; }
+.selected { background: #d5ad58; }
+.booked { background: #a94444; }
+
+.aircraft-label {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  color: #d5ad58;
+  margin: 30px 0;
+  letter-spacing: 2px;
+}
+
+.seat-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 13px;
+}
+
+.seat-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.seat-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.row-label {
+  width: 18px;
+  color: #d5ad58;
+  font-weight: bold;
+}
+
+.seat {
+  width: 43px;
+  height: 42px;
+  border: 1px solid #476078;
+  border-radius: 9px 9px 5px 5px;
+  color: white;
+  cursor: pointer;
+  font-size: 11px;
+  transition: 0.2s;
+}
+
+.seat.available {
+  background: #243d52;
+}
+
+.seat.available:hover {
+  border-color: #e8c779;
+  transform: translateY(-3px);
+}
+
+.seat.selected {
+  background: #d5ad58;
+  color: #101b30;
+  border-color: #f5d995;
+}
+
+.seat.booked {
+  background: #a94444;
+  border-color: #a94444;
+  cursor: not-allowed;
+}
+
+.aisle {
+  width: 25px;
+}
+
+.seat-summary {
+  border-top: 1px solid #293750;
+  margin-top: 30px;
+  padding-top: 15px;
+  text-align: center;
+}
+
+.seat-summary strong {
+  color: #e8c779;
+}
+
+.seat-summary p:last-child {
+  color: #aab5c7;
+  font-size: 13px;
+}
+
+@media (max-width: 480px) {
+  .seat-selection {
+    padding: 15px 8px;
+  }
+
+  .seat-row,
+  .seat-wrapper {
+    gap: 5px;
+  }
+
+  .seat {
+    width: 37px;
+    height: 37px;
+    font-size: 10px;
+  }
+
+  .aisle {
+    width: 12px;
+  }
+}

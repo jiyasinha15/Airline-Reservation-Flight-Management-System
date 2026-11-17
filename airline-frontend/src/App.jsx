@@ -355,27 +355,43 @@ function App() {
                 </label>
               )}
 
-              <label className="field passenger-field">
+
+              <div className="field passenger-field">
                 <span className="field-label">TRAVELLERS</span>
-                <span className="field-value">
-                  <Users size={17} />
-                  <select
-                    value={passengers}
-                    onChange={(e) => setPassengers(e.target.value)}
+
+                <div className="passenger-counter">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPassengers(String(Math.max(1, Number(passengers) - 1)))
+                    }
+                    disabled={Number(passengers) <= 1}
+                    aria-label="Decrease passengers"
                   >
-                    <option value="1">1 Traveller</option>
-                    <option value="2">2 Travellers</option>
-                    <option value="3">3 Travellers</option>
-                    <option value="4">4 Travellers</option>
-                    <option value="5">5 Travellers</option>
-                    <option value="6">6 Travellers</option>
-                    <option value="7">7 Travellers</option>
-                    <option value="8">8 Travellers</option>
-                    <option value="9">9 Travellers</option>
-                  </select>
-                  <ChevronDown size={15} />
-                </span>
-              </label>
+                    −
+                  </button>
+
+                  <span>
+                    <Users size={17} />
+                    <strong>{passengers}</strong>
+                    <small>
+                      {Number(passengers) === 1 ? "Traveller" : "Travellers"}
+                    </small>
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPassengers(String(Math.min(9, Number(passengers) + 1)))
+                    }
+                    disabled={Number(passengers) >= 9}
+                    aria-label="Increase passengers"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
 
               <label className="field class-field">
                 <span className="field-label">CABIN CLASS</span>

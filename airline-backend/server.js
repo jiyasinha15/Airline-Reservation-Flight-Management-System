@@ -1501,6 +1501,46 @@ app.get("/api/track-flight/:flightNumber", async (req, res) => {
 });
 
 
+// GET SEATS FOR A FLIGHT
+app.get("/api/seats/:flightId", async (req, res) => {
+  try {
+    const flightId = Number(req.params.flightId);
+
+    if (!Number.isInteger(flightId) || flightId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid flight ID"
+      });
+    }
+
+    const [seats] = await db.query(
+      `SELECT 
+        seat_id AS seatId,
+        flight_id AS flightId,
+        seat_number AS seatNumber,
+        seat_status AS seatStatus
+       FROM seats
+       WHERE flight_id = ?
+       ORDER BY seat_id`,
+      [flightId]
+    );
+
+    res.json({
+      success: true,
+      totalSeats: seats.length,
+      seats
+    });
+
+  } catch (error) {
+    console.error("Seat fetching error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to fetch seats"
+    });
+  }
+});
+
 
 
 app.listen(PORT, () => {

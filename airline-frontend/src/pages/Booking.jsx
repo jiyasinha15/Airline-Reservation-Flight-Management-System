@@ -28,7 +28,7 @@ function Booking() {
   const [error, setError] = useState("");
   const [seatNumbers, setSeatNumbers] = useState([]);
 
-  const [passengers, setPassengers] = useState(
+  const [passengers, setPassengers] = useState(() =>
     Array.from({ length: passengerCount }, () => ({
       name: "",
       age: "",
@@ -90,31 +90,32 @@ function Booking() {
 
     if (saving) return;
 
+    setError("");
+
     if (seatNumbers.length !== passengerCount) {
-      setError(
-        `Please select ${passengerCount} seat(s).`
-      );
+      setError(`Please select ${passengerCount} seat(s).`);
+      return;
+    }
+
+    if (new Set(seatNumbers).size !== seatNumbers.length) {
+      setError("Duplicate seat selection is not allowed.");
       return;
     }
 
     setSaving(true);
-    setError("");
 
     try {
-      const response = await fetch(
-        `${API_URL}/api/bookings`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            passengers,
-            flightId: flight.id,
-            seatNumbers
-          })
-        }
-      );
+      const response = await fetch(`${API_URL}/api/bookings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          passengers,
+          flightId: flight.id,
+          seatNumbers
+        })
+      });
 
       const data = await response.json();
 
@@ -153,9 +154,7 @@ function Booking() {
 
         <button
           className="booking-back"
-          onClick={() =>
-            navigate("/flights", { state: search })
-          }
+          onClick={() => navigate("/flights", { state: search })}
         >
           <ArrowLeft size={17} />
           Back to flights
@@ -222,9 +221,7 @@ function Booking() {
                   <input
                     name="name"
                     value={passenger.name}
-                    onChange={event =>
-                      handleChange(index, event)
-                    }
+                    onChange={event => handleChange(index, event)}
                     placeholder="Enter full name"
                     required
                     maxLength={80}
@@ -242,9 +239,7 @@ function Booking() {
                       min="1"
                       max="120"
                       value={passenger.age}
-                      onChange={event =>
-                        handleChange(index, event)
-                      }
+                      onChange={event => handleChange(index, event)}
                       placeholder="Age"
                       required
                     />
@@ -256,9 +251,7 @@ function Booking() {
                     <select
                       name="gender"
                       value={passenger.gender}
-                      onChange={event =>
-                        handleChange(index, event)
-                      }
+                      onChange={event => handleChange(index, event)}
                       required
                     >
                       <option value="">Select</option>
@@ -280,9 +273,7 @@ function Booking() {
                     name="email"
                     type="email"
                     value={passenger.email}
-                    onChange={event =>
-                      handleChange(index, event)
-                    }
+                    onChange={event => handleChange(index, event)}
                     placeholder="you@example.com"
                     required
                   />
@@ -295,9 +286,7 @@ function Booking() {
                     name="phone"
                     type="tel"
                     value={passenger.phone}
-                    onChange={event =>
-                      handleChange(index, event)
-                    }
+                    onChange={event => handleChange(index, event)}
                     placeholder="10-digit phone number"
                     pattern="[0-9]{10}"
                     required
@@ -308,10 +297,7 @@ function Booking() {
             ))}
 
             {error && (
-              <p
-                role="alert"
-                className="booking-error"
-              >
+              <p role="alert" className="booking-error">
                 {error}
               </p>
             )}
@@ -324,9 +310,7 @@ function Booking() {
                 seatNumbers.length !== passengerCount
               }
             >
-              {saving
-                ? "Saving booking..."
-                : "Continue to Payment"}
+              {saving ? "Saving booking..." : "Continue to Payment"}
             </button>
 
             <p className="booking-disclaimer">
@@ -349,7 +333,7 @@ function Booking() {
           <h2>{flight.airline}</h2>
 
           <p className="fare-code">
-            {flight.code}
+            {flight.flightCode || flight.code}
           </p>
 
           <div className="fare-route">
@@ -371,7 +355,7 @@ function Booking() {
           <div className="fare-detail">
             <span>Departure date</span>
             <strong>
-              {search.departure || "Not specified"}
+              {search.departure || search.date || "Not specified"}
             </strong>
           </div>
 
@@ -382,9 +366,7 @@ function Booking() {
 
           <div className="fare-detail">
             <span>Cabin class</span>
-            <strong>
-              {search.travelClass || "Economy"}
-            </strong>
+            <strong>{search.travelClass || "Economy"}</strong>
           </div>
 
           <div className="fare-detail">

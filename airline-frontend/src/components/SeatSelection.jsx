@@ -1,7 +1,9 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Armchair, RefreshCw } from "lucide-react";
 import "./SeatSelection.css";
+
+const API_URL = "http://localhost:5000";
 
 export default function SeatSelection({
   flightId,
@@ -13,24 +15,42 @@ export default function SeatSelection({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchSeats = async () => {
+  // FETCH SEATS FROM DATABASE
+  const fetchSeats = useCallback(async () => {
+    if (!flightId) {
+      setError("Flight ID is missing.");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      setError("");
 
       const response = await fetch(
-        `http://localhost:5000/api/seats/${flightId}`
+        `${API_URL}/api/flights/${flightId}/seats`
       );
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.message || "Unable to load seats");
+        throw new Error(
+          data.message || "Unable to load seats."
+        );
       }
 
-      setSeats(data.seats);
+      const formattedSeats = data.seats.map(seat => ({
+        seatId: seat.seat_id,
+        seatNumber: seat.seat_number,
+        seatType: seat.seat_type,
+        seatStatus: seat.seat_status
+      }));
+
+      setSeats(formattedSeats);
+
       setSelectedSeats(previous =>
         previous.filter(number =>
-          data.seats.some(
+          formattedSeats.some(
             seat =>
               seat.seatNumber === number &&
               seat.seatStatus === "AVAILABLE"
@@ -38,25 +58,29 @@ export default function SeatSelection({
         )
       );
 
-      setError("");
     } catch (err) {
+      console.error("Seat loading error:", err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [flightId]);
 
+  // LOAD SEATS WHEN FLIGHT CHANGES
   useEffect(() => {
+    setSeats([]);
     setSelectedSeats([]);
     onSeatsChange?.([]);
     fetchSeats();
-  }, [flightId]);
+  }, [fetchSeats, onSeatsChange]);
 
+  // SEND SELECTED SEATS TO BOOKING PAGE
   useEffect(() => {
     onSeatsChange?.(selectedSeats);
-  }, [selectedSeats]);
+  }, [selectedSeats, onSeatsChange]);
 
-  const toggleSeat = (seat) => {
+  // SELECT / DESELECT SEAT
+  const toggleSeat = seat => {
     if (seat.seatStatus !== "AVAILABLE") return;
 
     setSelectedSeats(previous => {
@@ -74,64 +98,135 @@ export default function SeatSelection({
     });
   };
 
-  if (loading) return <p>Loading seats...</p>;
-
-  if (error) {
+  // LOADING
+  if (loading) {
     return (
-      <div>
-        <p>{error}</p>
-        <button onClick={fetchSeats}>Retry</button>
+      <div className="seat-loading">
+        <RefreshCw className="seat-spinner" size={22} />
+        <p>Loading available seats...</p>
       </div>
     );
   }
 
-  const rows = [...new Set(
-    seats.map(seat => seat.seatNumber.charAt(0))
-  )];
+  // ERROR
+  if (error) {
+    return (
+      <div className="seat-error">
+        <p>{error}</p>
+
+        <button
+          type="button"
+          className="seat-refresh"
+          onClick={fetchSeats}
+        >
+          <RefreshCw size={17} />
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // NO SEATS
+  if (seats.length === 0) {
+    return (
+      <div className="seat-error">
+        <p>No seats are configured for this flight.</p>
+
+        <button
+          type="button"
+          className="seat-refresh"
+          onClick={fetchSeats}
+        >
+          <RefreshCw size={17} />
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // CORRECT ROW NUMBERS: 1, 2, 3 ... 30
+  const rows = [
+    ...new Set(
+      seats.map(seat =>
+        Number(
+          seat.seatNumber.match(/^\d+/)?.[0]
+        )
+      )
+    )
+  ].sort((a, b) => a - b);
 
   return (
     <div className="seat-selection">
 
+      {/* HEADING */}
       <div className="seat-heading">
         <div>
           <h2>Select Your Seats</h2>
           <p>Choose your preferred seats</p>
         </div>
 
-        <button className="seat-refresh" onClick={fetchSeats}>
+        <button
+          type="button"
+          className="seat-refresh"
+          onClick={fetchSeats}
+        >
           <RefreshCw size={17} />
           Refresh
         </button>
       </div>
 
+      {/* LEGEND */}
       <div className="seat-legend">
-        <span><i className="available"></i> Available</span>
-        <span><i className="selected"></i> Selected</span>
-        <span><i className="booked"></i> Booked</span>
+        <span>
+          <i className="available"></i>
+          Available
+        </span>
+
+        <span>
+          <i className="selected"></i>
+          Selected
+        </span>
+
+        <span>
+          <i className="booked"></i>
+          Booked
+        </span>
       </div>
 
+      {/* AIRCRAFT LABEL */}
       <div className="aircraft-label">
         <Armchair size={24} />
         <span>AIRCRAFT SEAT MAP</span>
       </div>
 
+      {/* SEAT GRID */}
       <div className="seat-grid">
+
         {rows.map(row => (
           <div className="seat-row" key={row}>
-            <span className="row-label">{row}</span>
+
+            <span className="row-label">
+              {row}
+            </span>
 
             {seats
               .filter(seat =>
-                seat.seatNumber.startsWith(row)
+                Number(
+                  seat.seatNumber.match(/^\d+/)?.[0]
+                ) === row
               )
               .map((seat, index) => (
-                <div key={seat.seatId} className="seat-wrapper">
+                <div
+                  key={seat.seatId}
+                  className="seat-wrapper"
+                >
 
                   {index === 3 && (
                     <div className="aisle"></div>
                   )}
 
                   <button
+                    type="button"
                     className={`seat ${
                       seat.seatStatus === "BOOKED"
                         ? "booked"
@@ -139,21 +234,29 @@ export default function SeatSelection({
                         ? "selected"
                         : "available"
                     }`}
-                    disabled={seat.seatStatus !== "AVAILABLE"}
+                    disabled={
+                      seat.seatStatus !== "AVAILABLE"
+                    }
                     onClick={() => toggleSeat(seat)}
                     title={`${seat.seatNumber} - ${seat.seatStatus}`}
                   >
                     {seat.seatNumber}
                   </button>
+
                 </div>
               ))}
+
           </div>
         ))}
+
       </div>
 
+      {/* SEAT SUMMARY */}
       <div className="seat-summary">
+
         <p>
-          Selected: <strong>
+          Selected:{" "}
+          <strong>
             {selectedSeats.length}/{passengerCount}
           </strong>
         </p>
@@ -163,6 +266,16 @@ export default function SeatSelection({
             ? "All passengers have a seat!"
             : `Select ${passengerCount - selectedSeats.length} more seat(s).`}
         </p>
+
+        {selectedSeats.length > 0 && (
+          <p>
+            Your seats:{" "}
+            <strong>
+              {selectedSeats.join(", ")}
+            </strong>
+          </p>
+        )}
+
       </div>
 
     </div>

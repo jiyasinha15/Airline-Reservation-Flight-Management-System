@@ -600,6 +600,7 @@ app.delete(
 );
 
 
+
 app.get("/api/flights/:flightId/seats", async (req, res) => {
   const flightId = Number(req.params.flightId);
 
@@ -616,15 +617,19 @@ app.get("/api/flights/:flightId/seats", async (req, res) => {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    // Get flight and aircraft capacity
+    // Step 1: Find flight and assigned aircraft capacity
     const [flights] = await connection.execute(
-      `SELECT f.id, f.aircraft_id, f.available_seats,
-                    a.seat_capacity
-             FROM flights f
-             LEFT JOIN aircraft a
-                ON f.aircraft_id = a.aircraft_id
-             WHERE f.id = ?
-             FOR UPDATE`,
+      `SELECT
+          f.id,
+          f.flight_code,
+          f.aircraft_id,
+          f.available_seats,
+          a.seat_capacity
+       FROM flights f
+       LEFT JOIN aircraft a
+         ON f.aircraft_id = a.aircraft_id
+       WHERE f.id = ?
+       FOR UPDATE`,
       [flightId]
     );
 
@@ -639,27 +644,32 @@ app.get("/api/flights/:flightId/seats", async (req, res) => {
 
     const flight = flights[0];
 
-    if (!flight.seat_capacity) {
+    // Step 2: Validate aircraft
+    if (
+      !flight.seat_capacity ||
+      Number(flight.seat_capacity) < 1
+    ) {
       await connection.rollback();
 
       return res.status(400).json({
         success: false,
-        message: "Aircraft is not assigned to this flight."
+        message: "Aircraft is not assigned or has invalid seat capacity."
       });
     }
 
     const capacity = Number(flight.seat_capacity);
+    const availableSeats = Number(flight.available_seats);
 
-    // Check whether seats have already been generated
+    // Step 3: Check existing seat records
     const [existingSeats] = await connection.execute(
       `SELECT COUNT(*) AS total
-             FROM flight_seats
-             WHERE flight_id = ?`,
+       FROM flight_seats
+       WHERE flight_id = ?`,
       [flightId]
     );
 
+    // Step 4: Generate seats if they do not exist
     if (Number(existingSeats[0].total) === 0) {
-
       const columns = ["A", "B", "C", "D", "E", "F"];
 
       for (let i = 0; i < capacity; i++) {
@@ -677,49 +687,53 @@ app.get("/api/flights/:flightId/seats", async (req, res) => {
         }
 
         await connection.execute(
-          `INSERT IGNORE INTO flight_seats
-                     (flight_id, seat_number, seat_type)
-                     VALUES (?, ?, ?)`,
+          `INSERT INTO flight_seats
+             (flight_id, seat_number, seat_type)
+           VALUES (?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+             seat_number = VALUES(seat_number)`,
           [flightId, `${row}${column}`, seatType]
         );
       }
 
-      // Preserve seats already reserved by older bookings.
-      // Their exact seat numbers are not available in the old records.
+      // Preserve old bookings when exact seat assignments
+      // are not available in historical booking records.
       const previouslyBooked = Math.max(
         0,
-        capacity - Number(flight.available_seats)
+        Math.min(capacity, capacity - availableSeats)
       );
 
       if (previouslyBooked > 0) {
-        const [generatedSeats] = await connection.execute(
-          `SELECT seat_id
-                     FROM flight_seats
-                     WHERE flight_id = ?
-                     ORDER BY seat_id
-                     LIMIT ?`,
-          [flightId, previouslyBooked]
+        await connection.execute(
+          `UPDATE flight_seats
+           SET seat_status = 'BOOKED'
+           WHERE flight_id = ?
+           ORDER BY seat_id
+           LIMIT ${previouslyBooked}`,
+          [flightId]
         );
-
-        for (const seat of generatedSeats) {
-          await connection.execute(
-            `UPDATE flight_seats
-                         SET seat_status = 'BOOKED'
-                         WHERE seat_id = ?`,
-            [seat.seat_id]
-          );
-        }
       }
     }
 
+    // Step 5: Fetch seats
     const [seats] = await connection.execute(
-      `SELECT seat_id, seat_number, seat_type, seat_status
-             FROM flight_seats
-             WHERE flight_id = ?
-             ORDER BY CAST(
-                 SUBSTRING(seat_number, 1, LENGTH(seat_number) - 1)
-                 AS UNSIGNED
-             ), RIGHT(seat_number, 1)`,
+      `SELECT
+          seat_id,
+          flight_id,
+          seat_number,
+          seat_type,
+          seat_status
+       FROM flight_seats
+       WHERE flight_id = ?
+       ORDER BY
+         CAST(
+           SUBSTRING(
+             seat_number,
+             1,
+             LENGTH(seat_number) - 1
+           ) AS UNSIGNED
+         ),
+         RIGHT(seat_number, 1)`,
       [flightId]
     );
 
@@ -728,12 +742,15 @@ app.get("/api/flights/:flightId/seats", async (req, res) => {
     return res.json({
       success: true,
       flightId,
+      flightCode: flight.flight_code,
       totalSeats: capacity,
       seats
     });
 
   } catch (error) {
-    if (connection) await connection.rollback();
+    if (connection) {
+      await connection.rollback();
+    }
 
     console.error("Seat fetching error:", error);
 

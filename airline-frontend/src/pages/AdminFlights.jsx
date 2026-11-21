@@ -16,6 +16,15 @@ const emptyFlight = {
   arrival_time: "",
   price: "",
   available_seats: 180,
+
+  status: "SCHEDULED",
+  boarding_time: "",
+  actual_departure_time: "",
+  actual_arrival_time: "",
+  revised_departure_time: "",
+  revised_arrival_time: "",
+  delay_reason: "",
+  cancellation_reason: "",
 };
 
 export default function AdminFlights() {
@@ -85,7 +94,21 @@ export default function AdminFlights() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+
+          ...(editingId
+            ? {
+              boarding_time: form.boarding_time || null,
+              actual_departure_time: form.actual_departure_time || null,
+              actual_arrival_time: form.actual_arrival_time || null,
+              revised_departure_time: form.revised_departure_time || null,
+              revised_arrival_time: form.revised_arrival_time || null,
+              delay_reason: form.delay_reason.trim() || null,
+              cancellation_reason: form.cancellation_reason.trim() || null,
+            }
+            : {}),
+        }),
       });
 
       const data = await response.json();
@@ -112,10 +135,19 @@ export default function AdminFlights() {
       flight_code: flight.flightCode || "",
       origin: flight.from || "",
       destination: flight.to || "",
-      departure_time: flight.departureTime || "",
-      arrival_time: flight.arrivalTime || "",
+      departure_time: String(flight.departureTime || "").slice(0, 5),
+      arrival_time: String(flight.arrivalTime || "").slice(0, 5),
       price: String(flight.price ?? ""),
       available_seats: String(flight.availableSeats ?? 0),
+
+      status: flight.status || "SCHEDULED",
+      boarding_time: String(flight.boardingTime || "").slice(0, 5),
+      actual_departure_time: String(flight.actualDepartureTime || "").slice(0, 5),
+      actual_arrival_time: String(flight.actualArrivalTime || "").slice(0, 5),
+      revised_departure_time: String(flight.revisedDepartureTime || "").slice(0, 5),
+      revised_arrival_time: String(flight.revisedArrivalTime || "").slice(0, 5),
+      delay_reason: flight.delayReason || "",
+      cancellation_reason: flight.cancellationReason || "",
     });
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -256,6 +288,93 @@ export default function AdminFlights() {
               <input type="number" name="available_seats" min="0"
                 step="1" value={form.available_seats}
                 onChange={handleChange} required />
+            </label>
+
+            <label>
+              Flight Status
+              <select
+                name="status"
+                value={form.status}
+                onChange={handleChange}
+              >
+                <option value="SCHEDULED">Scheduled</option>
+                <option value="BOARDING">Boarding</option>
+                <option value="DELAYED">Delayed</option>
+                <option value="CANCELLED">Cancelled</option>
+                <option value="DEPARTED">Departed</option>
+                <option value="IN_AIR">In Air</option>
+                <option value="ARRIVED">Arrived</option>
+              </select>
+            </label>
+
+            <label>
+              Boarding Time
+              <input
+                type="time"
+                name="boarding_time"
+                value={form.boarding_time}
+                onChange={handleChange}
+              />
+            </label>
+
+            <label>
+              Revised Departure
+              <input
+                type="time"
+                name="revised_departure_time"
+                value={form.revised_departure_time}
+                onChange={handleChange}
+              />
+            </label>
+
+            <label>
+              Revised Arrival
+              <input
+                type="time"
+                name="revised_arrival_time"
+                value={form.revised_arrival_time}
+                onChange={handleChange}
+              />
+            </label>
+
+            <label>
+              Actual Departure
+              <input
+                type="time"
+                name="actual_departure_time"
+                value={form.actual_departure_time}
+                onChange={handleChange}
+              />
+            </label>
+
+            <label>
+              Actual Arrival
+              <input
+                type="time"
+                name="actual_arrival_time"
+                value={form.actual_arrival_time}
+                onChange={handleChange}
+              />
+            </label>
+
+            <label>
+              Delay Reason
+              <input
+                name="delay_reason"
+                value={form.delay_reason}
+                onChange={handleChange}
+                placeholder="Enter delay reason"
+              />
+            </label>
+
+            <label>
+              Cancellation Reason
+              <input
+                name="cancellation_reason"
+                value={form.cancellation_reason}
+                onChange={handleChange}
+                placeholder="Enter cancellation reason"
+              />
             </label>
           </div>
 

@@ -61,6 +61,7 @@ app.get("/", (req, res) => {
 
 // MySQL se flights fetch karne wali API
 
+
 app.get("/api/flights", async (req, res) => {
   try {
     const { from, to, date, passengers = 1, airline } = req.query;
@@ -70,7 +71,7 @@ app.get("/api/flights", async (req, res) => {
     if (!Number.isInteger(passengerCount) || passengerCount < 1) {
       return res.status(400).json({
         success: false,
-        message: "Invalid passenger count"
+        message: "Invalid passenger count",
       });
     }
 
@@ -82,11 +83,26 @@ app.get("/api/flights", async (req, res) => {
         origin AS \`from\`,
         destination AS \`to\`,
         DATE_FORMAT(flight_date, '%Y-%m-%d') AS flightDate,
+
         DATE_FORMAT(departure_time, '%H:%i') AS departureTime,
         DATE_FORMAT(arrival_time, '%H:%i') AS arrivalTime,
+
+        DATE_FORMAT(boarding_time, '%H:%i') AS boardingTime,
+        DATE_FORMAT(actual_departure_time, '%H:%i') AS actualDepartureTime,
+        DATE_FORMAT(actual_arrival_time, '%H:%i') AS actualArrivalTime,
+
+        DATE_FORMAT(revised_departure_time, '%H:%i') AS revisedDepartureTime,
+        DATE_FORMAT(revised_arrival_time, '%H:%i') AS revisedArrivalTime,
+
+        delay_reason AS delayReason,
+        cancellation_reason AS cancellationReason,
+
+        last_status_update AS lastStatusUpdate,
+
         price,
         available_seats AS availableSeats,
         status
+
       FROM flights
       WHERE status != 'CANCELLED'
         AND available_seats >= ?
@@ -121,7 +137,7 @@ app.get("/api/flights", async (req, res) => {
     res.json({
       success: true,
       count: flights.length,
-      flights
+      flights,
     });
 
   } catch (error) {
@@ -129,10 +145,167 @@ app.get("/api/flights", async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: "Unable to fetch flights"
+      message: "Unable to fetch flights",
     });
   }
 });
+
+
+app.get("/api/flights/:flightCode/tracking", async (req, res) => {
+  try {
+    const flightCode = req.params.flightCode.trim().toUpperCase();
+
+    const [flights] = await db.execute(
+      `SELECT
+        id,
+        airline,
+        flight_code AS flightCode,
+        origin,
+        destination,
+        DATE_FORMAT(flight_date, '%Y-%m-%d') AS flightDate,
+
+        DATE_FORMAT(departure_time, '%H:%i') AS departureTime,
+        DATE_FORMAT(arrival_time, '%H:%i') AS arrivalTime,
+        DATE_FORMAT(boarding_time, '%H:%i') AS boardingTime,
+
+        DATE_FORMAT(actual_departure_time, '%H:%i') AS actualDepartureTime,
+        DATE_FORMAT(actual_arrival_time, '%H:%i') AS actualArrivalTime,
+
+        DATE_FORMAT(revised_departure_time, '%H:%i') AS revisedDepartureTime,
+        DATE_FORMAT(revised_arrival_time, '%H:%i') AS revisedArrivalTime,
+
+        status,
+        delay_reason AS delayReason,
+        cancellation_reason AS cancellationReason,
+        last_status_update AS lastStatusUpdate
+
+      FROM flights
+      WHERE flight_code = ?
+      LIMIT 1`,
+      [flightCode]
+    );
+
+    if (flights.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Flight not found. Please check the flight number.",
+      });
+    }
+
+    res.json({
+      success: true,
+      flight: flights[0],
+    });
+
+  } catch (error) {
+    console.error("Flight tracking error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to track flight.",
+    });
+  }
+});
+
+
+// PUBLIC REAL-TIME FLIGHT TRACKING API
+
+app.get("/api/live-tracking/:flightCode", async (req, res) => {
+  try {
+    const flightCode = req.params.flightCode.trim().toUpperCase();
+    const apiKey = process.env.AIRLABS_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({
+        success: false,
+        message: "AirLabs API key missing."
+      });
+    }
+
+    if (!/^[A-Z0-9]{2,10}$/.test(flightCode)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid flight number."
+      });
+    }
+
+    const url = new URL("https://airlabs.co/api/v9/flight");
+    url.searchParams.set("flight_iata", flightCode);
+    url.searchParams.set("api_key", apiKey);
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+      return res.status(502).json({
+        success: false,
+        message: data.error?.message || "AirLabs API request failed."
+      });
+    }
+
+    const flight = data.response;
+
+    if (!flight) {
+      return res.status(404).json({
+        success: false,
+        message: "No flight data found."
+      });
+    }
+
+    res.json({
+      success: true,
+      source: "AirLabs",
+      flight: {
+        flightNumber: flight.flight_iata,
+        airline: flight.airline_iata,
+        status: flight.status,
+
+        departure: {
+          airport: flight.dep_iata,
+          time: flight.dep_time,
+          estimated: flight.dep_estimated,
+          terminal: flight.dep_terminal,
+          gate: flight.dep_gate
+        },
+
+        arrival: {
+          airport: flight.arr_iata,
+          time: flight.arr_time,
+          estimated: flight.arr_estimated,
+          terminal: flight.arr_terminal,
+          gate: flight.arr_gate
+        },
+
+        aircraft: {
+          registration: flight.reg_number,
+          model: flight.aircraft_icao
+        },
+
+        live: flight.lat != null && flight.lng != null
+          ? {
+            latitude: flight.lat,
+            longitude: flight.lng,
+            altitude: flight.alt,
+            speed: flight.speed,
+            direction: flight.dir,
+            updated: flight.updated
+          }
+          : null
+      }
+    });
+
+  } catch (error) {
+    console.error("AirLabs tracking error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to fetch flight tracking data."
+    });
+  }
+});
+
+
+
 
 
 // ADMIN DASHBOARD STATISTICS
@@ -448,6 +621,7 @@ app.post(
 );
 
 // ADMIN: UPDATE FLIGHT
+
 app.put(
   "/api/admin/flights/:id",
   authenticateToken,
@@ -500,43 +674,130 @@ app.put(
         });
       }
 
+      const allowedStatuses = [
+        "SCHEDULED",
+        "BOARDING",
+        "DELAYED",
+        "CANCELLED",
+        "DEPARTED",
+        "IN_AIR",
+        "ARRIVED",
+      ];
+
+      const optionalFields = [
+        "boarding_time",
+        "actual_departure_time",
+        "actual_arrival_time",
+        "revised_departure_time",
+        "revised_arrival_time",
+        "delay_reason",
+        "cancellation_reason",
+      ];
+
+      const timeFields = [
+        "boarding_time",
+        "actual_departure_time",
+        "actual_arrival_time",
+        "revised_departure_time",
+        "revised_arrival_time",
+      ];
+
+      const updates = [
+        "airline = ?",
+        "flight_code = ?",
+        "origin = ?",
+        "destination = ?",
+        "departure_time = ?",
+        "arrival_time = ?",
+        "price = ?",
+        "available_seats = ?",
+      ];
+
+      const values = [
+        airline.trim(),
+        flight_code.trim().toUpperCase(),
+        origin.trim(),
+        destination.trim(),
+        departure_time,
+        arrival_time,
+        flightPrice,
+        seats,
+      ];
+
+      // Validate and update status only when supplied.
+      if (Object.hasOwn(req.body, "status")) {
+        if (!allowedStatuses.includes(req.body.status)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid flight status.",
+          });
+        }
+
+        updates.push("status = ?");
+        values.push(req.body.status);
+      }
+
+      // Update operational fields only when supplied.
+      for (const field of optionalFields) {
+        if (Object.hasOwn(req.body, field)) {
+          const value = req.body[field];
+
+          if (timeFields.includes(field)) {
+            if (
+              value !== null &&
+              (typeof value !== "string" ||
+                !/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(value))
+            ) {
+              return res.status(400).json({
+                success: false,
+                message: `Invalid time format for ${field}. Use HH:MM or HH:MM:SS.`,
+              });
+            }
+          } else if (
+            value !== null &&
+            (typeof value !== "string" || value.length > 255)
+          ) {
+            return res.status(400).json({
+              success: false,
+              message: `Invalid value for ${field}.`,
+            });
+          }
+
+          updates.push(`${field} = ?`);
+          values.push(value);
+        }
+      }
+
+      values.push(id);
+
       const [result] = await db.execute(
         `UPDATE flights
-         SET airline = ?,
-             flight_code = ?,
-             origin = ?,
-             destination = ?,
-             departure_time = ?,
-             arrival_time = ?,
-             price = ?,
-             available_seats = ?
+         SET ${updates.join(", ")}
          WHERE id = ?`,
-        [
-          airline.trim(),
-          flight_code.trim().toUpperCase(),
-          origin.trim(),
-          destination.trim(),
-          departure_time,
-          arrival_time,
-          flightPrice,
-          seats,
-          id,
-        ]
+        values
       );
 
       if (result.affectedRows === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "Flight not found.",
-        });
+        const [existing] = await db.execute(
+          "SELECT id FROM flights WHERE id = ?",
+          [id]
+        );
+
+        if (existing.length === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "Flight not found.",
+          });
+        }
       }
 
       res.json({
         success: true,
-        message: "Flight updated successfully!",
+        message: "Flight operations updated successfully!",
       });
+
     } catch (error) {
-      console.error("Update flight error:", error.message);
+      console.error("Update flight error:", error);
 
       res.status(error.code === "ER_DUP_ENTRY" ? 409 : 500).json({
         success: false,
@@ -548,6 +809,7 @@ app.put(
     }
   }
 );
+
 
 // ADMIN: DELETE FLIGHT
 app.delete(
@@ -1558,7 +1820,97 @@ app.get("/api/seats/:flightId", async (req, res) => {
   }
 });
 
+// DATABASE TRACKING - AURELIA AIR FLIGHTS
+app.get("/api/database-tracking/:flightCode", async (req, res) => {
+  try {
+    const flightCode = req.params.flightCode.trim().toUpperCase();
 
+    const [rows] = await db.query(
+      `SELECT
+    f.id,
+    f.flight_code,
+    f.airline,
+    f.origin,
+    f.destination,
+    f.flight_date,
+    f.status,
+    f.boarding_time,
+    f.departure_time,
+    f.arrival_time,
+    f.revised_departure_time,
+    f.revised_arrival_time,
+    f.actual_departure_time,
+    f.actual_arrival_time,
+    f.delay_reason,
+    f.cancellation_reason,
+    f.last_status_update,
+    a.model AS aircraft_model,
+    a.registration_no AS aircraft_registration
+   FROM flights f
+   LEFT JOIN aircraft a
+     ON f.aircraft_id = a.aircraft_id
+   WHERE UPPER(f.flight_code) = ?
+   LIMIT 1`,
+      [flightCode]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Aurelia Air flight not found in database."
+      });
+    }
+
+    const row = rows[0];
+
+    res.json({
+      success: true,
+      source: "DATABASE",
+      flight: {
+        flightNumber: row.flight_code,
+        airline: row.airline,
+        status: row.status,
+
+        departure: {
+          airport: row.origin,
+          iata: row.origin_airport_code,
+          time: row.departure_time,
+          estimated: row.revised_departure_time
+        },
+
+        arrival: {
+          airport: row.destination,
+          iata: row.destination_airport_code,
+          time: row.arrival_time,
+          estimated: row.revised_arrival_time
+        },
+        
+        boardingTime: row.boarding_time,
+        actualDepartureTime: row.actual_departure_time,
+        actualArrivalTime: row.actual_arrival_time,
+        delayReason: row.delay_reason,
+        cancellationReason: row.cancellation_reason,
+        lastStatusUpdate: row.last_status_update,
+
+        aircraft: row.aircraft_model
+          ? {
+            model: row.aircraft_model,
+            registration: row.aircraft_registration
+          }
+          : null,
+        live: null
+      }
+    });
+
+  } catch (error) {
+    console.error("Database tracking error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to fetch flight tracking information."
+    });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Aurelia Air backend running at http://localhost:${PORT}`);

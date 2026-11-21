@@ -585,3 +585,310 @@
     flex-direction: column;
   }
 }
+
+
+/* =========================================
+   FLIGHT OPERATIONS - STATUS BADGES
+========================================= */
+
+.flight-status-badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    background: rgba(217, 182, 109, 0.12);
+    color: #e8c77f;
+}
+
+.flight-status-badge.scheduled {
+    background: rgba(217, 182, 109, 0.12);
+    color: #e8c77f;
+}
+
+.flight-status-badge.boarding {
+    background: rgba(76, 160, 220, 0.15);
+    color: #75c6ff;
+}
+
+.flight-status-badge.delayed {
+    background: rgba(226, 166, 70, 0.15);
+    color: #ffc66e;
+}
+
+.flight-status-badge.cancelled {
+    background: rgba(220, 75, 75, 0.15);
+    color: #ff8585;
+}
+
+.flight-status-badge.departed,
+.flight-status-badge.in_air {
+    background: rgba(100, 150, 230, 0.15);
+    color: #9abaff;
+}
+
+.flight-status-badge.arrived {
+    background: rgba(92, 177, 130, 0.15);
+    color: #79d2a0;
+}
+
+/* =========================================
+   MANAGE FLIGHT BUTTON
+========================================= */
+
+.flight-manage-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 12px;
+    border: 1px solid rgba(217, 182, 109, 0.45);
+    border-radius: 7px;
+    background: rgba(217, 182, 109, 0.08);
+    color: #e8c77f;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s ease;
+    white-space: nowrap;
+}
+
+.flight-manage-button:hover {
+    background: #d9b66d;
+    color: #081525;
+}
+
+/* =========================================
+   FLIGHT EDITOR MODAL
+========================================= */
+
+.flight-editor-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: rgba(2, 9, 18, 0.82);
+    backdrop-filter: blur(7px);
+    overflow-y: auto;
+}
+
+.flight-editor-modal {
+    width: 100%;
+    max-width: 720px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 28px;
+    border: 1px solid rgba(217, 182, 109, 0.35);
+    border-radius: 15px;
+    background: #10243a;
+    box-shadow: 0 20px 70px rgba(0, 0, 0, 0.45);
+}
+
+.flight-editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+    padding-bottom: 22px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid #293e55;
+}
+
+.flight-editor-header h2 {
+    margin: 9px 0 6px;
+    color: #f5f0e5;
+    font-size: 22px;
+}
+
+.flight-editor-header p {
+    margin: 0;
+    color: #9aabc0;
+    font-size: 12px;
+}
+
+.flight-editor-close {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid #40536a;
+    border-radius: 8px;
+    background: #172e46;
+    color: #d9b66d;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.flight-editor-close:hover {
+    background: #a72e35;
+    color: white;
+}
+
+/* =========================================
+   OPERATIONS FORM
+========================================= */
+
+.operation-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 19px;
+}
+
+.operation-field {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-width: 0;
+}
+
+.operation-field.full-width {
+    grid-column: 1 / -1;
+}
+
+.operation-field label {
+    color: #d9c18b;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+}
+
+.operation-field input,
+.operation-field select,
+.operation-field textarea {
+    width: 100%;
+    min-height: 43px;
+    box-sizing: border-box;
+    padding: 11px 12px;
+    border: 1px solid #354b63;
+    border-radius: 8px;
+    outline: none;
+    background: #0b1d31;
+    color: #f5f3ed;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    transition: 0.2s;
+}
+
+.operation-field input:focus,
+.operation-field select:focus,
+.operation-field textarea:focus {
+    border-color: #d9b66d;
+    box-shadow: 0 0 0 2px rgba(217, 182, 109, 0.1);
+}
+
+.operation-field input[type="time"] {
+    color-scheme: dark;
+}
+
+.operation-field textarea {
+    min-height: 85px;
+    resize: vertical;
+}
+
+.operation-field select {
+    cursor: pointer;
+}
+
+/* =========================================
+   SAVE / CANCEL ACTIONS
+========================================= */
+
+.operation-message {
+    padding: 11px 13px;
+    margin: 20px 0 0;
+    border-radius: 7px;
+    background: rgba(92, 177, 130, 0.12);
+    color: #79d2a0;
+    font-size: 12px;
+}
+
+.flight-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #293e55;
+}
+
+.operation-cancel-button,
+.operation-save-button {
+    min-height: 41px;
+    padding: 10px 17px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.operation-cancel-button {
+    border: 1px solid #465970;
+    background: transparent;
+    color: #b8c4d1;
+}
+
+.operation-cancel-button:hover {
+    background: #263b52;
+}
+
+.operation-save-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid #d9b66d;
+    background: #d9b66d;
+    color: #081525;
+}
+
+.operation-save-button:hover {
+    background: #edcf91;
+}
+
+.operation-save-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* =========================================
+   RESPONSIVE MODAL
+========================================= */
+
+@media (max-width: 600px) {
+    .flight-editor-overlay {
+        padding: 10px;
+        align-items: flex-start;
+    }
+
+    .flight-editor-modal {
+        padding: 19px;
+        margin: 15px 0;
+        max-height: none;
+    }
+
+    .operation-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .operation-field.full-width {
+        grid-column: auto;
+    }
+
+    .flight-editor-actions {
+        flex-direction: column-reverse;
+    }
+
+    .operation-cancel-button,
+    .operation-save-button {
+        width: 100%;
+    }
+}

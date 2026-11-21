@@ -15,6 +15,10 @@ import {
     MapPin,
     Clock3,
     RefreshCw,
+    Pencil,
+    X,
+    Save,
+    CalendarClock,
 } from "lucide-react";
 
 import "./AdminDashboard.css";
@@ -27,6 +31,115 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [error, setError] = useState("");
+
+    const [selectedFlight, setSelectedFlight] = useState(null);
+    const [savingFlight, setSavingFlight] = useState(false);
+    const [operationMessage, setOperationMessage] = useState("");
+
+    const [operationForm, setOperationForm] = useState({
+        status: "SCHEDULED",
+        boarding_time: "",
+        actual_departure_time: "",
+        actual_arrival_time: "",
+        revised_departure_time: "",
+        revised_arrival_time: "",
+        delay_reason: "",
+        cancellation_reason: "",
+    });
+
+    const openFlightEditor = (flight) => {
+        setSelectedFlight(flight);
+        setOperationMessage("");
+
+        setOperationForm({
+            status: flight.status || "SCHEDULED",
+            boarding_time: flight.boardingTime || "",
+            actual_departure_time: flight.actualDepartureTime || "",
+            actual_arrival_time: flight.actualArrivalTime || "",
+            revised_departure_time: flight.revisedDepartureTime || "",
+            revised_arrival_time: flight.revisedArrivalTime || "",
+            delay_reason: flight.delayReason || "",
+            cancellation_reason: flight.cancellationReason || "",
+        });
+    };
+
+    const closeFlightEditor = () => {
+        setSelectedFlight(null);
+        setOperationMessage("");
+    };
+
+    const handleOperationChange = (e) => {
+        const { name, value } = e.target;
+
+        setOperationForm((previous) => ({
+            ...previous,
+            [name]: value,
+        }));
+    };
+
+    const saveFlightOperations = async (e) => {
+        e.preventDefault();
+
+        if (!selectedFlight) return;
+
+        try {
+            setSavingFlight(true);
+            setOperationMessage("");
+
+            const token = localStorage.getItem("aureliaToken");
+
+            const payload = {
+                airline: selectedFlight.airline,
+                flight_code: selectedFlight.flightCode,
+                origin: selectedFlight.from,
+                destination: selectedFlight.to,
+                departure_time: selectedFlight.departureTime,
+                arrival_time: selectedFlight.arrivalTime,
+                price: Number(selectedFlight.price),
+                available_seats: Number(selectedFlight.availableSeats),
+
+                status: operationForm.status,
+
+                boarding_time: operationForm.boarding_time || null,
+                actual_departure_time: operationForm.actual_departure_time || null,
+                actual_arrival_time: operationForm.actual_arrival_time || null,
+                revised_departure_time: operationForm.revised_departure_time || null,
+                revised_arrival_time: operationForm.revised_arrival_time || null,
+
+                delay_reason: operationForm.delay_reason.trim() || null,
+                cancellation_reason: operationForm.cancellation_reason.trim() || null,
+            };
+
+            const response = await fetch(
+                `http://localhost:5000/api/admin/flights/${selectedFlight.id}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Unable to update flight.");
+            }
+
+            setOperationMessage("Flight operations updated successfully!");
+
+            await loadDashboard();
+            setSelectedFlight(null);
+
+        } catch (err) {
+            console.error("Flight update error:", err);
+            setOperationMessage(err.message);
+        } finally {
+            setSavingFlight(false);
+        }
+    };
 
     const user = JSON.parse(
         localStorage.getItem("aureliaUser") || "null"
@@ -368,6 +481,8 @@ export default function AdminDashboard() {
                                     <th>ARRIVAL</th>
                                     <th>PRICE</th>
                                     <th>SEATS</th>
+                                    <th>STATUS</th>
+                                    <th>ACTIONS</th>
                                 </tr>
                             </thead>
 
@@ -407,6 +522,21 @@ export default function AdminDashboard() {
                                                     {flight.availableSeats}
                                                 </span>
                                             </td>
+                                            <td>
+                                                <span className={`flight-status-badge ${(flight.status || "SCHEDULED").toLowerCase()}`}>
+                                                    {flight.status || "SCHEDULED"}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                <button
+                                                    className="flight-manage-button"
+                                                    onClick={() => openFlightEditor(flight)}
+                                                >
+                                                    <Pencil size={15} />
+                                                    Manage
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))
                                 )}
@@ -424,6 +554,152 @@ export default function AdminDashboard() {
                     © 2026 Aurelia Air. All rights reserved.
                     <span>Airline Reservation & Flight Management System</span>
                 </footer>
+
+                {selectedFlight && (
+                    <div className="flight-editor-overlay">
+                        <div className="flight-editor-modal">
+
+                            <div className="flight-editor-header">
+                                <div>
+                                    <span className="panel-eyebrow">FLIGHT OPERATIONS</span>
+                                    <h2>Manage {selectedFlight.flightCode}</h2>
+                                    <p>
+                                        {selectedFlight.from} → {selectedFlight.to}
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    className="flight-editor-close"
+                                    onClick={closeFlightEditor}
+                                >
+                                    <X size={21} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={saveFlightOperations}>
+
+                                <div className="operation-form-grid">
+
+                                    <div className="operation-field full-width">
+                                        <label>Flight Status</label>
+
+                                        <select
+                                            name="status"
+                                            value={operationForm.status}
+                                            onChange={handleOperationChange}
+                                        >
+                                            <option value="SCHEDULED">Scheduled</option>
+                                            <option value="BOARDING">Boarding</option>
+                                            <option value="DELAYED">Delayed</option>
+                                            <option value="CANCELLED">Cancelled</option>
+                                            <option value="DEPARTED">Departed</option>
+                                            <option value="IN_AIR">In Air</option>
+                                            <option value="ARRIVED">Arrived</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="operation-field">
+                                        <label>Boarding Time</label>
+                                        <input
+                                            type="time"
+                                            name="boarding_time"
+                                            value={operationForm.boarding_time}
+                                            onChange={handleOperationChange}
+                                        />
+                                    </div>
+
+                                    <div className="operation-field">
+                                        <label>Actual Departure</label>
+                                        <input
+                                            type="time"
+                                            name="actual_departure_time"
+                                            value={operationForm.actual_departure_time}
+                                            onChange={handleOperationChange}
+                                        />
+                                    </div>
+
+                                    <div className="operation-field">
+                                        <label>Actual Arrival</label>
+                                        <input
+                                            type="time"
+                                            name="actual_arrival_time"
+                                            value={operationForm.actual_arrival_time}
+                                            onChange={handleOperationChange}
+                                        />
+                                    </div>
+
+                                    <div className="operation-field">
+                                        <label>Revised Departure</label>
+                                        <input
+                                            type="time"
+                                            name="revised_departure_time"
+                                            value={operationForm.revised_departure_time}
+                                            onChange={handleOperationChange}
+                                        />
+                                    </div>
+
+                                    <div className="operation-field">
+                                        <label>Revised Arrival</label>
+                                        <input
+                                            type="time"
+                                            name="revised_arrival_time"
+                                            value={operationForm.revised_arrival_time}
+                                            onChange={handleOperationChange}
+                                        />
+                                    </div>
+
+                                    <div className="operation-field full-width">
+                                        <label>Delay Reason</label>
+                                        <textarea
+                                            name="delay_reason"
+                                            placeholder="Enter reason for delay..."
+                                            value={operationForm.delay_reason}
+                                            onChange={handleOperationChange}
+                                        />
+                                    </div>
+
+                                    <div className="operation-field full-width">
+                                        <label>Cancellation Reason</label>
+                                        <textarea
+                                            name="cancellation_reason"
+                                            placeholder="Enter cancellation reason..."
+                                            value={operationForm.cancellation_reason}
+                                            onChange={handleOperationChange}
+                                        />
+                                    </div>
+
+                                </div>
+
+                                {operationMessage && (
+                                    <p className="operation-message">
+                                        {operationMessage}
+                                    </p>
+                                )}
+
+                                <div className="flight-editor-actions">
+                                    <button
+                                        type="button"
+                                        className="operation-cancel-button"
+                                        onClick={closeFlightEditor}
+                                    >
+                                        Cancel
+                                    </button>
+
+                                    <button
+                                        type="submit"
+                                        className="operation-save-button"
+                                        disabled={savingFlight}
+                                    >
+                                        <Save size={17} />
+                                        {savingFlight ? "Saving..." : "Save Changes"}
+                                    </button>
+                                </div>
+
+                            </form>
+                        </div>
+                    </div>
+                )}
             </main>
         </div>
     );

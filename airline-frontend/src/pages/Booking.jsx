@@ -108,7 +108,8 @@ function Booking() {
       const response = await fetch(`${API_URL}/api/bookings`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("aureliaToken")}`,
         },
         body: JSON.stringify({
           passengers,

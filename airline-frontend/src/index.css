@@ -3993,3 +3993,96 @@ img {
         margin-left: auto;
     }
 }
+
+/* PUBLIC FLIGHT TRACKING */
+
+.public-tracking-section {
+  padding: 85px 8%;
+  background: linear-gradient(120deg, #101d30, #172943);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.tracking-content {
+  max-width: 850px;
+  margin: auto;
+  text-align: center;
+}
+
+.tracking-content h2 {
+  color: #fff;
+  font-size: 38px;
+  margin: 14px 0;
+}
+
+.tracking-content p {
+  color: #aeb9c9;
+  line-height: 1.7;
+  margin-bottom: 30px;
+}
+
+.public-tracking-form {
+  display: flex;
+  gap: 12px;
+  max-width: 650px;
+  margin: auto;
+}
+
+.tracking-input {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  padding: 0 18px;
+  border-radius: 8px;
+  color: #172943;
+  min-width: 0;
+}
+
+.tracking-input input {
+  width: 100%;
+  border: none;
+  outline: none;
+  padding: 17px 0;
+  font-size: 15px;
+  background: transparent;
+  color: #172943;
+}
+
+.public-tracking-form button {
+  white-space: nowrap;
+}
+
+.tracking-content > small {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  color: #c5cbd5;
+  margin-top: 20px;
+}
+
+@media (max-width: 600px) {
+  .public-tracking-section {
+    padding: 60px 6%;
+  }
+
+  .tracking-content h2 {
+    font-size: 29px;
+  }
+
+  .public-tracking-form {
+    flex-direction: column;
+  }
+
+  .tracking-input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .public-tracking-form button {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -36,6 +36,12 @@ export default function Payment() {
         setResult(null);
 
         try {
+            console.log("PAYMENT DATA:", {
+                bookingId: booking?.id,
+                paymentMethod: method,
+                passengerCount: booking?.passengerCount,
+                booking
+            });
             const response = await fetch("http://localhost:5000/api/payments", {
                 method: "POST",
                 headers: {
@@ -44,7 +50,7 @@ export default function Payment() {
                 body: JSON.stringify({
                     bookingId: booking.id,
                     paymentMethod: method,
-                    passengerCount: Number(search.passengers),
+                    passengerCount: Number(booking.passengerCount),
                     simulateFailure,
                 }),
             });

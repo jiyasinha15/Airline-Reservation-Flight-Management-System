@@ -1029,7 +1029,7 @@ app.get("/api/flights/:flightId/seats", async (req, res) => {
 // Demo booking API
 
 
-app.post("/api/bookings", async (req, res) => {
+app.post("/api/bookings", authenticateToken, async (req, res) => {
   const { passenger, passengers, flightId, seatNumbers } = req.body;
 
   // Support old single-passenger and multiple-passenger formats
@@ -1174,9 +1174,9 @@ app.post("/api/bookings", async (req, res) => {
     // Create booking
     const [bookingResult] = await connection.execute(
       `INSERT INTO bookings
-             (pnr, passenger_id, flight_id, booking_status, seats_released)
-             VALUES (?, ?, ?, 'PENDING', 0)`,
-      [pnr, passengerIds[0], id]
+   (user_id, pnr, passenger_id, flight_id, booking_status, seats_released)
+   VALUES (?, ?, ?, ?, 'PENDING', 0)`,
+      [req.user.userId, pnr, passengerIds[0], id]
     );
 
     const bookingId = bookingResult.insertId;
@@ -1223,6 +1223,8 @@ app.post("/api/bookings", async (req, res) => {
              WHERE id = ?`,
       [passengerCount, id]
     );
+
+    console.log("BOOKING USER:", req.user);
 
     // Commit transaction
     await connection.commit();
@@ -1884,7 +1886,7 @@ app.get("/api/database-tracking/:flightCode", async (req, res) => {
           time: row.arrival_time,
           estimated: row.revised_arrival_time
         },
-        
+
         boardingTime: row.boarding_time,
         actualDepartureTime: row.actual_departure_time,
         actualArrivalTime: row.actual_arrival_time,

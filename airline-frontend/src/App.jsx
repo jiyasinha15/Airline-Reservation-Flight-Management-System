@@ -83,6 +83,7 @@ function App() {
   const [passengers, setPassengers] = useState("1");
   const [travelClass, setTravelClass] = useState("Economy");
   const [notice, setNotice] = useState("");
+  const [trackingCode, setTrackingCode] = useState("");
   const navigate = useNavigate();
 
   const today = new Date().toLocaleDateString("en-CA");
@@ -130,6 +131,21 @@ function App() {
         passengers,
         travelClass,
       },
+    });
+  }
+
+  function handleTrackFlight(event) {
+    event.preventDefault();
+
+    const code = trackingCode.trim().toUpperCase();
+
+    if (!code) {
+      setNotice("Please enter a flight number.");
+      return;
+    }
+
+    navigate("/flight-tracker", {
+      state: { flightCode: code },
     });
   }
 
@@ -427,6 +443,40 @@ function App() {
               </div>
             )}
           </form>
+        </section>
+
+        <section className="public-tracking-section">
+          <div className="tracking-content">
+            <span className="section-kicker">FLIGHT STATUS</span>
+            <h2>Track your journey.</h2>
+            <p>
+              Stay updated with your flight status, departure,
+              arrival and latest travel information.
+            </p>
+
+            <form onSubmit={handleTrackFlight} className="public-tracking-form">
+              <div className="tracking-input">
+                <Plane size={20} />
+
+                <input
+                  type="text"
+                  placeholder="Enter flight number (e.g. AU201)"
+                  value={trackingCode}
+                  onChange={(e) => setTrackingCode(e.target.value)}
+                />
+              </div>
+
+              <button type="submit" className="search-button">
+                <Search size={18} />
+                Track Flight
+              </button>
+            </form>
+
+            <small>
+              <ShieldCheck size={14} />
+              Public flight tracking — no login required
+            </small>
+          </div>
         </section>
 
         <section className="destinations-section" id="destinations">

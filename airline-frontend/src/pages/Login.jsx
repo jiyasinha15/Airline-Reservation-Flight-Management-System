@@ -51,7 +51,7 @@ export default function Login() {
             if (isAdmin) {
                 navigate("/admin/dashboard");
             } else {
-                navigate(isAdmin ? "/admin/dashboard" : "/home");
+                navigate("/user/dashboard");
             }
 
         } catch (error) {

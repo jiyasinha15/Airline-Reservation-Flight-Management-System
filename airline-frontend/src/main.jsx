@@ -21,14 +21,14 @@ import AdminFlights from "./pages/AdminFlights";
 import { Navigate } from "react-router-dom";
 import Payment from "./pages/Payment.jsx";
 import FlightTracker from "./pages/FlightTracker.jsx";
-
+import UserDashboard from "./pages/UserDashboard";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
 
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/home" replace />} />
 
         <Route path="/home" element={<App />} />
 
@@ -96,6 +96,14 @@ createRoot(document.getElementById("root")).render(
           }
         />
         <Route path="/flight-tracker" element={<FlightTracker />} />
+        <Route
+          path="/user/dashboard"
+          element={
+            <ProtectedRoute allowedRole="USER">
+              <UserDashboard />
+            </ProtectedRoute>
+          }
+        />
 
       </Routes>
 

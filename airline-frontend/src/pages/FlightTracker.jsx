@@ -14,6 +14,7 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./FlightTracker.css";
+import { useLocation } from "react-router-dom";
 
 // Aircraft marker
 const planeIcon = new L.DivIcon({
@@ -59,6 +60,8 @@ const airportCoordinates = {
   YYZ: [43.6777, -79.6248]
 };
 
+
+
 // Automatically fit map to all available positions
 function MapUpdater({ positions }) {
   const map = useMap();
@@ -88,7 +91,11 @@ function formatDateTime(value) {
 }
 
 export default function FlightTracker() {
-  const [flightNumber, setFlightNumber] = useState("");
+  const location = useLocation();
+
+  const [flightNumber, setFlightNumber] = useState(
+    location.state?.flightCode || ""
+  );
   const [flight, setFlight] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -130,6 +137,15 @@ export default function FlightTracker() {
       if (showLoader) setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    const code = location.state?.flightCode;
+
+    if (code) {
+      setFlightNumber(code);
+      fetchFlight(code);
+    }
+  }, [location.state, fetchFlight]);
 
   const searchFlight = async (e) => {
     e.preventDefault();

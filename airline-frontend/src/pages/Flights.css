@@ -685,3 +685,169 @@
     flex-direction: column;
   }
 }
+
+
+/* AIRPORT SEARCH DROPDOWN */
+
+.flight-search-summary {
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.airport-search-field {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    flex: 1;
+    min-width: 170px;
+}
+
+.airport-search-field > span {
+    color: #9eb4d0;
+    font-size: 12px;
+    letter-spacing: 2px;
+}
+
+.airport-search-field select {
+    width: 100%;
+    background: #111f34;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 9px;
+    outline: none;
+    color: white;
+    font-size: 18px;
+    font-weight: 700;
+    padding: 12px;
+    cursor: pointer;
+}
+
+.airport-search-field select option {
+    background: #14243a;
+    color: white;
+    font-size: 15px;
+}
+
+.airport-search-field small {
+    color: #9eb4d0;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.swap-airports {
+    background: transparent;
+    border: none;
+    color: #edc66e;
+    cursor: pointer;
+    padding: 10px;
+    transition: transform 0.2s ease;
+}
+
+.swap-airports:hover {
+    transform: rotate(180deg);
+}
+
+.airport-search-button,
+.airport-clear-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 16px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.airport-search-button {
+    background: #edc66e;
+    color: #101a2b;
+    border: none;
+}
+
+.airport-search-button:hover {
+    background: #f5d58c;
+}
+
+.airport-clear-button {
+    background: transparent;
+    border: 1px solid #a68a50;
+    color: #edc66e;
+}
+
+.airport-clear-button:hover {
+    background: rgba(237,198,110,0.1);
+}
+
+@media (max-width: 750px) {
+    .flight-search-summary {
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .airport-search-field {
+        flex-basis: 40%;
+    }
+
+    .airport-search-button,
+    .airport-clear-button {
+        flex: 1;
+    }
+}
+
+/* AIRPORT SEARCH DROPDOWNS */
+
+.airport-search-field {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    flex: 1;
+    min-width: 180px;
+}
+
+.airport-search-field label {
+    color: #8f9bb0;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+}
+
+.airport-search-field select {
+    width: 100%;
+    padding: 12px 14px;
+    background: #111c31;
+    color: #ffffff;
+    border: 1px solid #34425b;
+    border-radius: 9px;
+    font-size: 17px;
+    font-weight: 650;
+    outline: none;
+    cursor: pointer;
+}
+
+.airport-search-field select:focus {
+    border-color: #e4c276;
+    box-shadow: 0 0 0 2px rgba(228,194,118,.12);
+}
+
+.airport-search-field select option {
+    background: #111c31;
+    color: #ffffff;
+}
+
+@media (max-width: 600px) {
+    .airport-search-field {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .flight-search-summary {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .summary-arrow {
+        transform: rotate(90deg);
+        align-self: center;
+    }
+}

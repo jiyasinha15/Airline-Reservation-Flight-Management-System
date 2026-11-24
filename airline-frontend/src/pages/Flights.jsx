@@ -8,11 +8,15 @@ import {
     Luggage,
     ArrowRight,
     RefreshCw,
-    Users
+    Users,
+    Search,
+    ArrowLeftRight
 } from "lucide-react";
 import "./Flights.css";
 
 const API_URL = "http://localhost:5000/api/flights";
+
+
 
 function getDuration(departure, arrival) {
     if (!departure || !arrival) return "N/A";
@@ -26,6 +30,7 @@ function getDuration(departure, arrival) {
     if (end < start) end += 24 * 60;
 
     const total = end - start;
+
     return `${Math.floor(total / 60)}h ${total % 60}m`;
 }
 
@@ -53,17 +58,28 @@ export default function Flights() {
     const [flights, setFlights] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    const [airports, setAirports] = useState([]);
+
     const [sortBy, setSortBy] = useState("recommended");
 
     const [airlineFilter, setAirlineFilter] = useState("all");
     const [maxPrice, setMaxPrice] = useState(20000);
     const [departureFilter, setDepartureFilter] = useState("all");
 
+    // AIRPORT SEARCH STATES
+    const [fromAirport, setFromAirport] = useState(search.from || "");
+    const [toAirport, setToAirport] = useState(search.to || "");
+
+    const [appliedFrom, setAppliedFrom] = useState(search.from || "");
+    const [appliedTo, setAppliedTo] = useState(search.to || "");
+
     const passengerCount = Math.max(
         1,
         Number(search.passengers || 1)
     );
 
+    // FETCH FLIGHTS FROM DATABASE
     async function fetchFlights() {
         try {
             setLoading(true);
@@ -71,9 +87,12 @@ export default function Flights() {
 
             const params = new URLSearchParams();
 
-            if (search.from) params.set("from", search.from);
-            if (search.to) params.set("to", search.to);
-            if (search.departure) params.set("date", search.departure);
+            if (search.departure) {
+                params.set("date", search.departure);
+            }
+
+            console.log("SELECTED DATE:", search.departure);
+            console.log("API REQUEST:", `${API_URL}?${params.toString()}`);
 
             params.set("passengers", String(passengerCount));
 
@@ -94,6 +113,7 @@ export default function Flights() {
                 availableSeats: Number(flight.availableSeats)
             }));
 
+            console.log("FLIGHT DATA:", formattedFlights);
             setFlights(formattedFlights);
 
         } catch (err) {
@@ -106,22 +126,49 @@ export default function Flights() {
 
     useEffect(() => {
         fetchFlights();
-    }, [search.from, search.to, search.departure, passengerCount]);
+    }, [search.departure, passengerCount]);
 
+    // FETCH AIRPORTS FROM MYSQL DATABASE
+    useEffect(() => {
+        async function fetchAirports() {
+            try {
+                const response = await fetch(
+                    "http://localhost:5000/api/airports"
+                );
+
+                if (!response.ok) {
+                    throw new Error("Unable to fetch airports");
+                }
+
+                const data = await response.json();
+
+                setAirports(data.airports || []);
+
+            } catch (error) {
+                console.error("Airports loading error:", error);
+            }
+        }
+
+        fetchAirports();
+    }, []);
+
+    // FILTER AND SORT FLIGHTS
     const filteredFlights = useMemo(() => {
         let result = [...flights];
 
-        if (search.from) {
+        if (appliedFrom.trim()) {
             result = result.filter(
                 (flight) =>
-                    flight.from?.toUpperCase() === search.from.toUpperCase()
+                    flight.from?.toUpperCase() ===
+                    appliedFrom.trim().toUpperCase()
             );
         }
 
-        if (search.to) {
+        if (appliedTo.trim()) {
             result = result.filter(
                 (flight) =>
-                    flight.to?.toUpperCase() === search.to.toUpperCase()
+                    flight.to?.toUpperCase() ===
+                    appliedTo.trim().toUpperCase()
             );
         }
 
@@ -179,8 +226,8 @@ export default function Flights() {
 
     }, [
         flights,
-        search.from,
-        search.to,
+        appliedFrom,
+        appliedTo,
         passengerCount,
         sortBy,
         airlineFilter,
@@ -188,10 +235,40 @@ export default function Flights() {
         departureFilter
     ]);
 
+    // SEARCH BUTTON
+    function handleAirportSearch() {
+        setAppliedFrom(fromAirport);
+        setAppliedTo(toAirport);
+    }
+
+    // SWAP AIRPORTS
+    function swapAirports() {
+        setFromAirport(toAirport);
+        setToAirport(fromAirport);
+
+        setAppliedFrom(toAirport);
+        setAppliedTo(fromAirport);
+    }
+
+    // CLEAR AIRPORT SEARCH
+    function clearAirportSearch() {
+        setFromAirport("");
+        setToAirport("");
+        setAppliedFrom("");
+        setAppliedTo("");
+    }
+
+    // SELECT FLIGHT
     function selectFlight(flight) {
+        const updatedSearch = {
+            ...search,
+            from: appliedFrom,
+            to: appliedTo
+        };
+
         navigate("/booking", {
             state: {
-                search,
+                search: updatedSearch,
                 flight
             }
         });
@@ -203,10 +280,10 @@ export default function Flights() {
             <header className="flights-header">
                 <button
                     className="back-button"
-                    onClick={() => navigate("/")}
+                    onClick={() => navigate("/user/dashboard")}
                 >
                     <ArrowLeft size={18} />
-                    Back to Home
+                    Back to Dashboard
                 </button>
 
                 <div className="flight-logo">
@@ -229,17 +306,62 @@ export default function Flights() {
                     </p>
                 </section>
 
+                {/* AIRPORT SEARCH SECTION */}
+
                 <section className="flight-search-summary">
-                    <div>
+
+                    <div className="airport-search-field">
                         <span>FROM</span>
-                        <h2>{search.from || "All Airports"}</h2>
+
+                        <select
+                            value={fromAirport}
+                            onChange={(e) => setFromAirport(e.target.value)}
+                        >
+                            <option value="">All Airports</option>
+
+                            {airports.map((airport) => (
+                                <option key={airport.code} value={airport.code}>
+                                    {airport.city} ({airport.code})
+                                </option>
+                            ))}
+                        </select>
+
+                        {fromAirport && (
+                            <small>
+                                {airports.find(a => a.code === fromAirport)?.name}
+                            </small>
+                        )}
                     </div>
 
-                    <ArrowRight className="summary-arrow" />
+                    <button
+                        className="swap-airports"
+                        title="Swap airports"
+                        onClick={swapAirports}
+                    >
+                        <ArrowLeftRight size={22} />
+                    </button>
 
-                    <div>
+                    <div className="airport-search-field">
                         <span>TO</span>
-                        <h2>{search.to || "All Destinations"}</h2>
+
+                        <select
+                            value={toAirport}
+                            onChange={(e) => setToAirport(e.target.value)}
+                        >
+                            <option value="">All Destinations</option>
+
+                            {airports.map((airport) => (
+                                <option key={airport.code} value={airport.code}>
+                                    {airport.city} ({airport.code})
+                                </option>
+                            ))}
+                        </select>
+
+                        {toAirport && (
+                            <small>
+                                {airports.find(a => a.code === toAirport)?.name}
+                            </small>
+                        )}
                     </div>
 
                     <div className="summary-info">
@@ -247,12 +369,24 @@ export default function Flights() {
                         <span>{passengerCount} Passenger(s)</span>
                     </div>
 
-                    {search.departure && (
-                        <div className="summary-info">
-                            <span>{search.departure}</span>
-                        </div>
-                    )}
+                    <button
+                        className="airport-search-button"
+                        onClick={handleAirportSearch}
+                    >
+                        <Search size={17} />
+                        Search Flights
+                    </button>
+
+                    <button
+                        className="airport-clear-button"
+                        onClick={clearAirportSearch}
+                    >
+                        Clear
+                    </button>
+
                 </section>
+
+                {/* FLIGHT TOOLBAR */}
 
                 <section className="flight-toolbar">
                     <div>
@@ -273,6 +407,8 @@ export default function Flights() {
                         <option value="duration">Shortest Duration</option>
                     </select>
                 </section>
+
+                {/* FILTERS */}
 
                 <div className="flight-filters">
 
@@ -327,12 +463,16 @@ export default function Flights() {
 
                 </div>
 
+                {/* LOADING */}
+
                 {loading && (
                     <div className="flight-message">
                         <RefreshCw className="loading-icon" size={28} />
                         <p>Finding the best flights for you...</p>
                     </div>
                 )}
+
+                {/* ERROR */}
 
                 {!loading && error && (
                     <div className="flight-message error-message">
@@ -345,6 +485,8 @@ export default function Flights() {
                     </div>
                 )}
 
+                {/* NO FLIGHTS */}
+
                 {!loading && !error && filteredFlights.length === 0 && (
                     <div className="flight-message">
                         <Plane size={35} />
@@ -355,11 +497,13 @@ export default function Flights() {
                             ya selected passengers ke liye seats nahi hain.
                         </p>
 
-                        <button onClick={() => navigate("/")}>
-                            Search Again
+                        <button onClick={clearAirportSearch}>
+                            Clear Airport Search
                         </button>
                     </div>
                 )}
+
+                {/* FLIGHT CARDS */}
 
                 {!loading && !error && filteredFlights.length > 0 && (
                     <div className="flight-list">

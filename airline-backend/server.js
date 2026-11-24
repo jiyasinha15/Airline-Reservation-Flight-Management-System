@@ -50,6 +50,79 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
+app.get("/api/user/dashboard", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // User dashboard statistics
+    const [stats] = await db.execute(
+      `SELECT
+                COUNT(*) AS totalBookings,
+                SUM(CASE WHEN booking_status = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmedBookings,
+                SUM(CASE WHEN booking_status = 'PENDING' THEN 1 ELSE 0 END) AS pendingBookings
+             FROM bookings
+             WHERE user_id = ?`,
+      [userId]
+    );
+
+    // Total successful payments
+    const [payments] = await db.execute(
+      `SELECT COALESCE(SUM(p.amount), 0) AS totalPaid
+             FROM payments p
+             JOIN bookings b ON p.booking_id = b.id
+             WHERE b.user_id = ?
+             AND p.payment_status = 'SUCCESS'`,
+      [userId]
+    );
+
+    // Recent bookings
+    const [recentBookings] = await db.execute(
+      `SELECT
+                b.id,
+                b.pnr,
+                b.booking_status,
+                b.booking_date,
+                f.flight_code,
+                f.airline,
+                f.origin,
+                f.destination,
+                f.departure_time,
+                f.arrival_time,
+                COALESCE(p.payment_status, 'UNPAID') AS payment_status
+             FROM bookings b
+             JOIN flights f ON b.flight_id = f.id
+             LEFT JOIN (
+                 SELECT booking_id, MAX(payment_status) AS payment_status
+                 FROM payments
+                 GROUP BY booking_id
+             ) p ON b.id = p.booking_id
+             WHERE b.user_id = ?
+             ORDER BY b.booking_date DESC
+             LIMIT 5`,
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      stats: {
+        totalBookings: Number(stats[0].totalBookings || 0),
+        confirmedBookings: Number(stats[0].confirmedBookings || 0),
+        pendingBookings: Number(stats[0].pendingBookings || 0),
+        totalPaid: Number(payments[0].totalPaid || 0)
+      },
+      recentBookings
+    });
+
+  } catch (error) {
+    console.error("User dashboard error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to load dashboard data."
+    });
+  }
+});
+
 // Home route
 app.get("/", (req, res) => {
   res.json({
@@ -208,101 +281,144 @@ app.get("/api/flights/:flightCode/tracking", async (req, res) => {
 });
 
 
-// PUBLIC REAL-TIME FLIGHT TRACKING API
+// PUBLIC REAL-TIME FLIGHT TRACKING API - AVIATIONSTACK
 
 app.get("/api/live-tracking/:flightCode", async (req, res) => {
-  try {
-    const flightCode = req.params.flightCode.trim().toUpperCase();
-    const apiKey = process.env.AIRLABS_API_KEY;
+    try {
+        const flightCode = req.params.flightCode.trim().toUpperCase();
+        const apiKey = process.env.AVIATIONSTACK_API_KEY;
 
-    if (!apiKey) {
-      return res.status(500).json({
-        success: false,
-        message: "AirLabs API key missing."
-      });
+        if (!apiKey) {
+            return res.status(500).json({
+                success: false,
+                message: "Aviationstack API key missing."
+            });
+        }
+
+        if (!/^[A-Z0-9]{2,10}$/.test(flightCode)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid flight number."
+            });
+        }
+
+        const url = new URL(
+            "https://api.aviationstack.com/v1/flights"
+        );
+
+        url.searchParams.set("access_key", apiKey);
+        url.searchParams.set("flight_iata", flightCode);
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+            console.error("Aviationstack tracking error:", data.error);
+
+            return res.status(502).json({
+                success: false,
+                message: data.error?.message ||
+                    "Aviationstack API request failed."
+            });
+        }
+
+        const flight = (data.data || []).find(item =>
+            item.flight?.iata?.toUpperCase() === flightCode
+        );
+
+        if (!flight) {
+            return res.status(404).json({
+                success: false,
+                message: "No live flight data found for this flight number."
+            });
+        }
+
+        const departure = flight.departure || {};
+        const arrival = flight.arrival || {};
+        const aircraft = flight.aircraft || {};
+        const liveData = flight.live;
+
+        const formatTime = (value) => {
+            if (!value) return null;
+
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) return null;
+
+            return date.toLocaleTimeString("en-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false
+            });
+        };
+
+        res.json({
+            success: true,
+            source: "Aviationstack",
+
+            flight: {
+                flightNumber:
+                    flight.flight?.iata || flightCode,
+
+                airline:
+                    flight.airline?.name || "Unknown Airline",
+
+                status:
+                    (flight.flight_status || "unknown").toUpperCase(),
+
+                departure: {
+                    airport: departure.airport,
+                    iata: departure.iata,
+                    time: formatTime(departure.scheduled),
+                    scheduled: departure.scheduled,
+                    estimated: departure.estimated,
+                    terminal: departure.terminal,
+                    gate: departure.gate,
+                    delay: departure.delay,
+                    actual: departure.actual
+                },
+
+                arrival: {
+                    airport: arrival.airport,
+                    iata: arrival.iata,
+                    time: formatTime(arrival.scheduled),
+                    scheduled: arrival.scheduled,
+                    estimated: arrival.estimated,
+                    terminal: arrival.terminal,
+                    gate: arrival.gate,
+                    delay: arrival.delay,
+                    actual: arrival.actual
+                },
+
+                aircraft: {
+                    registration: aircraft.registration,
+                    model: aircraft.iata || aircraft.icao || "Not available"
+                },
+
+                live: liveData?.latitude != null &&
+                      liveData?.longitude != null
+                    ? {
+                        latitude: liveData.latitude,
+                        longitude: liveData.longitude,
+                        altitude: liveData.altitude,
+                        speed: liveData.speed_horizontal,
+                        direction: liveData.direction,
+                        updated: liveData.updated
+                    }
+                    : null
+            }
+        });
+
+    } catch (error) {
+        console.error("Aviationstack tracking error:", error.message);
+
+        res.status(500).json({
+            success: false,
+            message: "Unable to fetch flight tracking data."
+        });
     }
-
-    if (!/^[A-Z0-9]{2,10}$/.test(flightCode)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid flight number."
-      });
-    }
-
-    const url = new URL("https://airlabs.co/api/v9/flight");
-    url.searchParams.set("flight_iata", flightCode);
-    url.searchParams.set("api_key", apiKey);
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (!response.ok || data.error) {
-      return res.status(502).json({
-        success: false,
-        message: data.error?.message || "AirLabs API request failed."
-      });
-    }
-
-    const flight = data.response;
-
-    if (!flight) {
-      return res.status(404).json({
-        success: false,
-        message: "No flight data found."
-      });
-    }
-
-    res.json({
-      success: true,
-      source: "AirLabs",
-      flight: {
-        flightNumber: flight.flight_iata,
-        airline: flight.airline_iata,
-        status: flight.status,
-
-        departure: {
-          airport: flight.dep_iata,
-          time: flight.dep_time,
-          estimated: flight.dep_estimated,
-          terminal: flight.dep_terminal,
-          gate: flight.dep_gate
-        },
-
-        arrival: {
-          airport: flight.arr_iata,
-          time: flight.arr_time,
-          estimated: flight.arr_estimated,
-          terminal: flight.arr_terminal,
-          gate: flight.arr_gate
-        },
-
-        aircraft: {
-          registration: flight.reg_number,
-          model: flight.aircraft_icao
-        },
-
-        live: flight.lat != null && flight.lng != null
-          ? {
-            latitude: flight.lat,
-            longitude: flight.lng,
-            altitude: flight.alt,
-            speed: flight.speed,
-            direction: flight.dir,
-            updated: flight.updated
-          }
-          : null
-      }
-    });
-
-  } catch (error) {
-    console.error("AirLabs tracking error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Unable to fetch flight tracking data."
-    });
-  }
 });
+
 
 
 
@@ -1912,6 +2028,136 @@ app.get("/api/database-tracking/:flightCode", async (req, res) => {
       message: "Unable to fetch flight tracking information."
     });
   }
+});
+
+// GET ALL AIRPORTS
+app.get("/api/airports", async (req, res) => {
+  try {
+    const [airports] = await db.execute(
+      `SELECT airport_code AS code,
+                    airport_name AS name,
+                    city,
+                    country
+             FROM airports
+             ORDER BY city ASC`
+    );
+
+    res.json({
+      success: true,
+      airports
+    });
+
+  } catch (error) {
+    console.error("Airports fetch error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to fetch airports"
+    });
+  }
+});
+
+
+// AVIATIONSTACK - AIRPORTS API
+app.get("/api/aviation/airports", async (req, res) => {
+  try {
+    const apiKey = process.env.AVIATIONSTACK_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({
+        success: false,
+        message: "Aviation API key is not configured."
+      });
+    }
+
+    const url = new URL(
+      "https://api.aviationstack.com/v1/airports"
+    );
+
+    url.searchParams.set("access_key", apiKey);
+    url.searchParams.set("limit", "1");
+
+
+    const response = await fetch(url);
+
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+      console.error("Aviationstack API error:", {
+        status: response.status,
+        error: data.error
+      });
+
+      return res.status(502).json({
+        success: false,
+        providerStatus: response.status,
+        providerError: data.error?.code || "unknown_error",
+        providerMessage: data.error?.message || "Unknown provider error"
+      });
+    }
+
+    const airports = (data.data || [])
+      .filter(airport => airport.iata_code)
+      .map(airport => ({
+        code: airport.iata_code,
+        name: airport.airport_name,
+        city: airport.city,
+        country: airport.country_name
+      }));
+
+    res.json({
+      success: true,
+      count: airports.length,
+      airports
+    });
+
+  } catch (error) {
+    console.error("Airport API error:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to fetch airport information."
+    });
+  }
+});
+
+app.get("/api/aviation/test-flights", async (req, res) => {
+    try {
+        const apiKey = process.env.AVIATIONSTACK_API_KEY;
+
+        const url = new URL(
+            "https://api.aviationstack.com/v1/flights"
+        );
+
+        url.searchParams.set("access_key", apiKey);
+        url.searchParams.set("limit", "1");
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+            console.error("Flight API error:", data.error);
+
+            return res.status(502).json({
+                success: false,
+                providerStatus: response.status,
+                providerError: data.error?.code,
+                providerMessage: data.error?.message
+            });
+        }
+
+        res.json({
+            success: true,
+            count: data.data?.length || 0,
+            flights: data.data || []
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
 });
 
 app.listen(PORT, () => {

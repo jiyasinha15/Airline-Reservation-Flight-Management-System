@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
     Plane, LayoutDashboard, Ticket, Search, MapPin,
     UserRound, CreditCard, LogOut, Menu, X,
-    ArrowRight, Clock, ShieldCheck, Luggage
+    ArrowRight, Clock, ShieldCheck, Luggage, CheckCircle2, IndianRupee, Hourglass
 } from "lucide-react";
 import "./UserDashboard.css";
 
@@ -12,6 +12,46 @@ export default function UserDashboard() {
     const navigate = useNavigate();
     const [user, setUser] = useState({});
     const [menuOpen, setMenuOpen] = useState(false);
+    const [dashboardStats, setDashboardStats] = useState({
+        totalBookings: 0,
+        confirmedBookings: 0,
+        pendingBookings: 0,
+        totalPaid: 0
+    });
+
+    const [recentBookings, setRecentBookings] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDashboard = async () => {
+            try {
+                const response = await fetch(
+                    "http://localhost:5000/api/user/dashboard",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem("aureliaToken")}`
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Unable to load dashboard");
+                }
+
+                setDashboardStats(data.stats);
+                setRecentBookings(data.recentBookings);
+
+            } catch (error) {
+                console.error("Dashboard error:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboard();
+    }, []);
 
     useEffect(() => {
         const savedUser = localStorage.getItem("aureliaUser");
@@ -24,6 +64,8 @@ export default function UserDashboard() {
             }
         }
     }, []);
+
+
 
     const logout = () => {
         localStorage.removeItem("aureliaToken");
@@ -149,6 +191,153 @@ export default function UserDashboard() {
                         <Plane size={115} strokeWidth={1} />
                     </div>
                 </section>
+
+
+                <section className="dashboard-section">
+
+                    <div className="section-title">
+                        <div>
+                            <h2>Booking Overview</h2>
+                            <p>Your travel activity at a glance.</p>
+                        </div>
+                    </div>
+
+                    {loading ? (
+                        <p className="dashboard-loading">Loading your dashboard...</p>
+                    ) : (
+                        <div className="user-stats-grid">
+
+                            <div className="user-stat-card">
+                                <div className="stat-icon blue">
+                                    <Ticket size={23} />
+                                </div>
+                                <div>
+                                    <p>Total Bookings</p>
+                                    <h2>{dashboardStats.totalBookings}</h2>
+                                </div>
+                            </div>
+
+                            <div className="user-stat-card">
+                                <div className="stat-icon green">
+                                    <CheckCircle2 size={23} />
+                                </div>
+                                <div>
+                                    <p>Confirmed</p>
+                                    <h2>{dashboardStats.confirmedBookings}</h2>
+                                </div>
+                            </div>
+
+                            <div className="user-stat-card">
+                                <div className="stat-icon orange">
+                                    <Hourglass size={23} />
+                                </div>
+                                <div>
+                                    <p>Pending</p>
+                                    <h2>{dashboardStats.pendingBookings}</h2>
+                                </div>
+                            </div>
+
+                            <div className="user-stat-card">
+                                <div className="stat-icon gold">
+                                    <IndianRupee size={23} />
+                                </div>
+                                <div>
+                                    <p>Total Paid</p>
+                                    <h2>₹{Number(dashboardStats.totalPaid).toLocaleString("en-IN")}</h2>
+                                </div>
+                            </div>
+
+                        </div>
+                    )}
+
+                </section>
+
+                <section className="dashboard-section recent-bookings-section">
+
+                    <div className="section-title">
+                        <div>
+                            <h2>Recent Bookings</h2>
+                            <p>Your latest flight reservations.</p>
+                        </div>
+
+                        <button
+                            className="view-all-bookings"
+                            onClick={() => navigate("/my-bookings")}
+                        >
+                            View All <ArrowRight size={15} />
+                        </button>
+                    </div>
+
+                    {loading ? (
+                        <p className="dashboard-loading">Loading bookings...</p>
+                    ) : recentBookings.length === 0 ? (
+                        <div className="no-bookings">
+                            <Plane size={35} />
+                            <h3>No bookings yet</h3>
+                            <p>Your flight reservations will appear here.</p>
+                            <button onClick={() => navigate("/flights")}>
+                                Book Your First Flight
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="recent-bookings-table-wrapper">
+                            <table className="recent-bookings-table">
+                                <thead>
+                                    <tr>
+                                        <th>PNR</th>
+                                        <th>Flight</th>
+                                        <th>Route</th>
+                                        <th>Booking Date</th>
+                                        <th>Booking Status</th>
+                                        <th>Payment</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {recentBookings.map((booking) => (
+                                        <tr key={booking.id}>
+                                            <td className="pnr-cell">{booking.pnr}</td>
+
+                                            <td>
+                                                <strong>{booking.flight_code}</strong>
+                                                <small>{booking.airline}</small>
+                                            </td>
+
+                                            <td>
+                                                <strong>
+                                                    {booking.origin} → {booking.destination}
+                                                </strong>
+                                                <small>
+                                                    {String(booking.departure_time).slice(0, 5)}
+                                                    {" - "}
+                                                    {String(booking.arrival_time).slice(0, 5)}
+                                                </small>
+                                            </td>
+
+                                            <td>
+                                                {new Date(booking.booking_date).toLocaleDateString("en-IN")}
+                                            </td>
+
+                                            <td>
+                                                <span className={`booking-status ${booking.booking_status.toLowerCase()}`}>
+                                                    {booking.booking_status}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                <span className={`payment-status ${booking.payment_status.toLowerCase()}`}>
+                                                    {booking.payment_status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                </section>
+
 
                 <section className="dashboard-section">
                     <div className="section-title">

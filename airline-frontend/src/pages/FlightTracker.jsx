@@ -163,16 +163,7 @@ export default function FlightTracker() {
     await fetchFlight(number);
   };
 
-  // Refresh aircraft position every 30 seconds
-  useEffect(() => {
-    if (!flight?.flightNumber) return;
 
-    const interval = setInterval(() => {
-      fetchFlight(flight.flightNumber, false);
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [flight?.flightNumber, fetchFlight]);
 
   const live = flight?.live;
 
@@ -387,26 +378,38 @@ export default function FlightTracker() {
 
               <div className="tracker-admin-item">
                 <span>Actual Departure</span>
-                <strong>{flight.actualDepartureTime || "Not updated"}</strong>
+                <strong>
+                  {flight.departure?.actual
+                    ? formatDateTime(flight.departure.actual)
+                    : "Not updated"}
+                </strong>
               </div>
 
               <div className="tracker-admin-item">
                 <span>Revised Departure</span>
                 <strong>
-                  {flight.departure?.estimated || "Not revised"}
+                  {flight.departure?.estimated
+                    ? formatDateTime(flight.departure.estimated)
+                    : "Not revised"}
                 </strong>
               </div>
 
               <div className="tracker-admin-item">
                 <span>Revised Arrival</span>
                 <strong>
-                  {flight.arrival?.estimated || "Not revised"}
+                  {flight.arrival?.estimated
+                    ? formatDateTime(flight.arrival.estimated)
+                    : "Not revised"}
                 </strong>
               </div>
 
               <div className="tracker-admin-item">
                 <span>Actual Arrival</span>
-                <strong>{flight.actualArrivalTime || "Not updated"}</strong>
+                <strong>
+                  {flight.arrival?.actual
+                    ? formatDateTime(flight.arrival.actual)
+                    : "Not updated"}
+                </strong>
               </div>
 
             </div>
@@ -627,7 +630,7 @@ export default function FlightTracker() {
               {lastUpdated?.toLocaleTimeString("en-IN") || "N/A"}
             </span>
 
-            <span>Automatic refresh: 30 seconds</span>
+            <span>Refresh: Manual</span>
           </div>
 
         </section>

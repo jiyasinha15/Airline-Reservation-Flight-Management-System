@@ -240,3 +240,33 @@
     align-self: stretch;
   }
 }
+
+/* Flight Status Dropdown */
+.af-form-grid select {
+  width: 100%;
+  box-sizing: border-box;
+
+  background: #091426;
+  border: 1px solid #34445d;
+  border-radius: 7px;
+
+  color: #f5f2e9;
+  padding: 13px;
+  font-size: 14px;
+  font-family: Arial, sans-serif;
+
+  outline: none;
+  cursor: pointer;
+}
+
+/* Dropdown options */
+.af-form-grid select option {
+  background: #111d30;
+  color: #f5f2e9;
+}
+
+/* Focus */
+.af-form-grid select:focus {
+  border-color: #d5ad62;
+  box-shadow: 0 0 0 2px rgba(213, 173, 98, 0.12);
+}

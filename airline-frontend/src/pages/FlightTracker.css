@@ -553,3 +553,49 @@
     grid-template-columns: 1fr;
   }
 }
+/* Back to Dashboard Button */
+.tracker-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 11px 22px;
+  border: 1px solid rgba(217, 181, 109, 0.45);
+  border-radius: 10px;
+
+  background: linear-gradient(
+    135deg,
+    #d9b56d,
+    #b88a3b
+  );
+
+  color: #081426;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  text-decoration: none;
+
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.tracker-home:hover {
+  background: linear-gradient(
+    135deg,
+    #f0d18d,
+    #d9b56d
+  );
+
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(217, 181, 109, 0.2);
+}
+
+.tracker-home:active {
+  transform: translateY(0);
+}
+
+.tracker-home:focus-visible {
+  outline: 2px solid #f0d18d;
+  outline-offset: 3px;
+}

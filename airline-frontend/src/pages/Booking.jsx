@@ -27,6 +27,11 @@ function Booking() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [seatNumbers, setSeatNumbers] = useState([]);
+  const [cabinClass, setCabinClass] = useState(
+    search?.travelClass || "Economy"
+  );
+
+  const [mealType, setMealType] = useState("none");
 
   const [passengers, setPassengers] = useState(() =>
     Array.from({ length: passengerCount }, () => ({
@@ -54,9 +59,30 @@ function Booking() {
     setSeatNumbers([]);
   }, [passengerCount]);
 
-  const total = flight
-    ? Number(flight.price) * passengerCount
-    : 0;
+  const cabinMultipliers = {
+    Economy: 1,
+    "Premium Economy": 1.4,
+    Business: 2.5,
+    "First Class": 4,
+  };
+
+  const mealPrices = {
+    none: 0,
+    vegetarian: 300,
+    nonVegetarian: 500,
+  };
+
+  const baseFare = Number(flight?.price || 0);
+
+  const classFare = Math.round(
+    baseFare * (cabinMultipliers[cabinClass] || 1)
+  );
+
+  const mealPrice = mealPrices[mealType] || 0;
+
+  const perPassengerFare = classFare + mealPrice;
+
+  const total = perPassengerFare * passengerCount;
 
   if (!flight || !search) {
     return (
@@ -114,7 +140,14 @@ function Booking() {
         body: JSON.stringify({
           passengers,
           flightId: flight.id,
-          seatNumbers
+          seatNumbers,
+          travelDate: search?.departure || search?.date || null,
+
+          cabinClass,
+          mealType,
+          mealPrice,
+          classFare,
+          totalFare: total,
         })
       });
 
@@ -133,6 +166,11 @@ function Booking() {
           flight,
           search,
           selectedSeats: seatNumbers,
+          cabinClass,
+          mealType,
+          mealPrice,
+          classFare,
+          perPassengerFare,
           total
         }
       });
@@ -201,6 +239,43 @@ function Booking() {
             onSubmit={handleSubmit}
             className="passenger-form"
           >
+
+            <div className="passenger-card">
+              <h3>Cabin Class & Meal</h3>
+
+              <label>
+                Cabin Class
+
+                <select
+                  value={cabinClass}
+                  onChange={event => setCabinClass(event.target.value)}
+                >
+                  <option value="Economy">Economy</option>
+                  <option value="Premium Economy">Premium Economy</option>
+                  <option value="Business">Business</option>
+                  <option value="First Class">First Class</option>
+                </select>
+              </label>
+
+              <label>
+                Meal Preference
+
+                <select
+                  value={mealType}
+                  onChange={event => setMealType(event.target.value)}
+                >
+                  <option value="none">No Meal — ₹0</option>
+                  <option value="vegetarian">Vegetarian Meal — ₹300</option>
+                  <option value="nonVegetarian">
+                    Non-Vegetarian Meal — ₹500
+                  </option>
+                </select>
+              </label>
+
+              <p>
+                Meal charge: ₹{mealPrice.toLocaleString("en-IN")} per passenger
+              </p>
+            </div>
 
             <span className="booking-kicker">
               TRAVELLER INFORMATION
@@ -366,14 +441,39 @@ function Booking() {
           </div>
 
           <div className="fare-detail">
+            <span>Meal</span>
+            <strong>
+              {mealType === "none"
+                ? "Not included"
+                : mealType === "vegetarian"
+                  ? "Vegetarian"
+                  : "Non-Vegetarian"}
+            </strong>
+          </div>
+
+          <div className="fare-detail">
+            <span>Cabin fare</span>
+            <strong>
+              ₹{classFare.toLocaleString("en-IN")}
+            </strong>
+          </div>
+
+          <div className="fare-detail">
+            <span>Meal charge</span>
+            <strong>
+              ₹{(mealPrice * passengerCount).toLocaleString("en-IN")}
+            </strong>
+          </div>
+
+          <div className="fare-detail">
             <span>Cabin class</span>
-            <strong>{search.travelClass || "Economy"}</strong>
+            <strong>{cabinClass}</strong>
           </div>
 
           <div className="fare-detail">
             <span>Price per passenger</span>
             <strong>
-              ₹{Number(flight.price).toLocaleString("en-IN")}
+              ₹{perPassengerFare.toLocaleString("en-IN")}
             </strong>
           </div>
 

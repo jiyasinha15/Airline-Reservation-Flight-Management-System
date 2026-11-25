@@ -14,7 +14,7 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./FlightTracker.css";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 // Aircraft marker
 const planeIcon = new L.DivIcon({
@@ -92,7 +92,7 @@ function formatDateTime(value) {
 
 export default function FlightTracker() {
   const location = useLocation();
-
+  const navigate = useNavigate();
   const [flightNumber, setFlightNumber] = useState(
     location.state?.flightCode || ""
   );
@@ -229,14 +229,18 @@ export default function FlightTracker() {
     <div className="tracker-page">
 
       <nav className="tracker-navbar">
-        <a href="/home" className="tracker-brand">
+        <a href="/" className="tracker-brand">
           <Plane size={25} />
           <span>AURELIA <b>AIR</b></span>
         </a>
 
-        <a href="/home" className="tracker-home">
-          Home
-        </a>
+        <button
+          type="button"
+          className="tracker-home"
+          onClick={() => navigate("/user/dashboard")}
+        >
+          Back to Dashboard
+        </button>
       </nav>
 
       <section className="tracker-hero">

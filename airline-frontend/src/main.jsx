@@ -34,7 +34,14 @@ createRoot(document.getElementById("root")).render(
 
         <Route path="/flights" element={<Flights />} />
         <Route path="/booking" element={<Booking />} />
-        <Route path="/payments" element={<Payments />} />
+        <Route
+          path="/payments"
+          element={
+            <ProtectedRoute allowedRole="USER">
+              <Payments />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/login" element={<RoleSelection />} />

@@ -15,8 +15,14 @@ import {
 import "./Flights.css";
 
 const API_URL = "http://localhost:5000/api/flights";
+const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
 
-
+    return `${year}-${month}-${day}`;
+};
 
 function getDuration(departure, arrival) {
     if (!departure || !arrival) return "N/A";
@@ -66,6 +72,9 @@ export default function Flights() {
     const [airlineFilter, setAirlineFilter] = useState("all");
     const [maxPrice, setMaxPrice] = useState(20000);
     const [departureFilter, setDepartureFilter] = useState("all");
+    const [departureDate, setDepartureDate] = useState(
+        search.departure || getTodayDate()
+    );
 
     // AIRPORT SEARCH STATES
     const [fromAirport, setFromAirport] = useState(search.from || "");
@@ -87,14 +96,14 @@ export default function Flights() {
 
             const params = new URLSearchParams();
 
-            if (search.departure) {
-                params.set("date", search.departure);
-            }
+            params.set("date", departureDate);
+            params.set("from", appliedFrom);
+            params.set("to", appliedTo);
+            params.set("passengers", String(passengerCount));
 
             console.log("SELECTED DATE:", search.departure);
             console.log("API REQUEST:", `${API_URL}?${params.toString()}`);
 
-            params.set("passengers", String(passengerCount));
 
             const response = await fetch(
                 `${API_URL}?${params.toString()}`
@@ -126,7 +135,7 @@ export default function Flights() {
 
     useEffect(() => {
         fetchFlights();
-    }, [search.departure, passengerCount]);
+    }, [departureDate, passengerCount, appliedFrom, appliedTo]);
 
     // FETCH AIRPORTS FROM MYSQL DATABASE
     useEffect(() => {
@@ -259,20 +268,37 @@ export default function Flights() {
     }
 
     // SELECT FLIGHT
+
     function selectFlight(flight) {
         const updatedSearch = {
             ...search,
             from: appliedFrom,
-            to: appliedTo
+            to: appliedTo,
+            departure: departureDate
         };
 
+        const bookingState = {
+            search: updatedSearch,
+            flight
+        };
+
+        const token = localStorage.getItem("aureliaToken");
+
+        if (!token) {
+            navigate("/login/user", {
+                state: {
+                    redirectTo: "/booking",
+                    bookingState
+                }
+            });
+            return;
+        }
+
         navigate("/booking", {
-            state: {
-                search: updatedSearch,
-                flight
-            }
+            state: bookingState
         });
     }
+
 
     return (
         <div className="flights-page">
@@ -364,6 +390,17 @@ export default function Flights() {
                         )}
                     </div>
 
+                    <div className="flight-date-field">
+                        <span>DEPARTURE DATE</span>
+
+                        <input
+                            type="date"
+                            value={departureDate}
+                            min={getTodayDate()}
+                            onChange={(e) => setDepartureDate(e.target.value)}
+                        />
+                    </div>
+
                     <div className="summary-info">
                         <Users size={17} />
                         <span>{passengerCount} Passenger(s)</span>
@@ -442,7 +479,7 @@ export default function Flights() {
                         <input
                             type="range"
                             min="1000"
-                            max="20000"
+                            max="70000"
                             step="500"
                             value={maxPrice}
                             onChange={(e) => setMaxPrice(Number(e.target.value))}
@@ -566,7 +603,8 @@ export default function Flights() {
 
                                     <div className="flight-features">
                                         <span>
-                                            <Luggage size={16} /> Baggage
+                                            <Luggage size={16} />
+                                            15 kg Baggage Included
                                         </span>
 
                                         <span>

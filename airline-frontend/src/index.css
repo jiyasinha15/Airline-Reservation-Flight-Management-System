@@ -4086,3 +4086,88 @@ img {
     justify-content: center;
   }
 }
+
+
+/* FIX: Destination buttons */
+.destination-link {
+  appearance: none;
+  -webkit-appearance: none;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 20px 0;
+  margin: 0;
+
+  border: none;
+  border-top: 1px solid #e9e3da;
+  border-radius: 0;
+
+  background: transparent;
+  color: #24334b;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  text-align: left;
+  line-height: 1.5;
+
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.destination-link svg {
+  color: #c9923d;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.destination-link:hover {
+  color: #c9923d;
+}
+
+.destination-link:hover svg {
+  transform: translateX(4px);
+}
+
+/* FIX: Plan your journey button */
+.view-all {
+  appearance: none;
+  -webkit-appearance: none;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  padding: 0 0 10px;
+  margin: 0;
+
+  border: none;
+  border-bottom: 1px solid #d9a45b;
+  border-radius: 0;
+
+  background: transparent;
+  color: #172238;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.view-all:hover {
+  color: #c9923d;
+}
+
+.view-all svg {
+  flex-shrink: 0;
+}

@@ -488,9 +488,20 @@ function App() {
                 A little inspiration for wherever life takes you next.
               </p>
             </div>
-            <a href="#flight-search" className="view-all">
+            <button
+              type="button"
+              className="view-all"
+              onClick={() => {
+                document
+                  .getElementById("flight-search")
+                  ?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+              }}
+            >
               Plan your journey <ArrowRight size={17} />
-            </a>
+            </button>
           </div>
 
           <div className="destination-grid">
@@ -517,16 +528,23 @@ function App() {
                     <strong>{destination.price}</strong>
                   </div>
                 </div>
-                <a
-                  href="#flight-search"
+                <button
+                  type="button"
                   className="destination-link"
                   onClick={() => {
                     setTo(destination.code);
                     setNotice("");
+
+                    document
+                      .getElementById("flight-search")
+                      ?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
                   }}
                 >
                   Explore destination <ArrowRight size={16} />
-                </a>
+                </button>
               </article>
             ))}
           </div>

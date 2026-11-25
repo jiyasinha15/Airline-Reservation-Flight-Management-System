@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     Plane, LayoutDashboard, Ticket, Search, MapPin,
     UserRound, CreditCard, LogOut, Menu, X,
@@ -10,8 +10,16 @@ import "./UserDashboard.css";
 
 export default function UserDashboard() {
     const navigate = useNavigate();
-    const [user, setUser] = useState({});
+    const location = useLocation();
     const [menuOpen, setMenuOpen] = useState(false);
+
+
+    const goTo = (path) => {
+        navigate(path);
+        setMenuOpen(false);
+    };
+    const [user, setUser] = useState({});
+
     const [dashboardStats, setDashboardStats] = useState({
         totalBookings: 0,
         confirmedBookings: 0,
@@ -121,25 +129,46 @@ export default function UserDashboard() {
 
                 <p className="sidebar-heading">MAIN MENU</p>
 
-                <button className="user-nav active" onClick={() => navigate("/user/dashboard")}>
+
+                <button
+                    className={`user-nav ${location.pathname === "/user/dashboard" ? "active" : ""}`}
+                    onClick={() => goTo("/user/dashboard")}
+                >
                     <LayoutDashboard size={19} /> Dashboard
                 </button>
 
-                <button className="user-nav" onClick={() => navigate("/flights")}>
+                <button
+                    className={`user-nav ${location.pathname === "/flights" ? "active" : ""}`}
+                    onClick={() => goTo("/flights")}
+                >
                     <Search size={19} /> Search Flights
                 </button>
 
-                <button className="user-nav" onClick={() => navigate("/my-bookings")}>
+                <button
+                    className={`user-nav ${location.pathname === "/my-bookings" ? "active" : ""}`}
+                    onClick={() =>
+                        navigate("/my-bookings", {
+                            state: { from: "dashboard" },
+                        })
+                    }
+                >
                     <Ticket size={19} /> My Bookings
                 </button>
 
-                <button className="user-nav" onClick={() => navigate("/flight-tracker")}>
+                <button
+                    className={`user-nav ${location.pathname === "/flight-tracker" ? "active" : ""}`}
+                    onClick={() => goTo("/flight-tracker")}
+                >
                     <MapPin size={19} /> Flight Tracker
                 </button>
 
-                <button className="user-nav" onClick={() => navigate("/payments")}>
+                <button
+                    className={`user-nav ${location.pathname === "/payments" ? "active" : ""}`}
+                    onClick={() => navigate("/payments")}
+                >
                     <CreditCard size={19} /> Payments
                 </button>
+
 
                 <div className="sidebar-bottom">
                     <button className="user-nav logout-nav" onClick={logout}>
@@ -182,7 +211,7 @@ export default function UserDashboard() {
                             explore destinations and stay updated with your flights.
                         </p>
 
-                        <button onClick={() => navigate("/flights")}>
+                        <button onClick={() => goTo("/flights")}>
                             Explore Flights <ArrowRight size={17} />
                         </button>
                     </div>
@@ -262,7 +291,7 @@ export default function UserDashboard() {
 
                         <button
                             className="view-all-bookings"
-                            onClick={() => navigate("/my-bookings")}
+                            onClick={() => goTo("/my-bookings")}
                         >
                             View All <ArrowRight size={15} />
                         </button>
@@ -275,7 +304,7 @@ export default function UserDashboard() {
                             <Plane size={35} />
                             <h3>No bookings yet</h3>
                             <p>Your flight reservations will appear here.</p>
-                            <button onClick={() => navigate("/flights")}>
+                            <button onClick={() => goTo("/flights")}>
                                 Book Your First Flight
                             </button>
                         </div>
@@ -355,7 +384,7 @@ export default function UserDashboard() {
                                 <div
                                     className="user-action-card"
                                     key={action.title}
-                                    onClick={() => navigate(action.path)}
+                                    onClick={() => goTo(action.path)}
                                 >
                                     <div className="action-icon">
                                         <Icon size={23} />
@@ -379,7 +408,7 @@ export default function UserDashboard() {
                         <div>
                             <h3>Stay Updated</h3>
                             <p>Track your flight status and get the latest journey information.</p>
-                            <button onClick={() => navigate("/flight-tracker")}>
+                            <button onClick={() => goTo("/flight-tracker")}>
                                 Track Flight <ArrowRight size={15} />
                             </button>
                         </div>
@@ -390,7 +419,7 @@ export default function UserDashboard() {
                         <div>
                             <h3>Ready to Travel?</h3>
                             <p>Discover available routes and find your next destination.</p>
-                            <button onClick={() => navigate("/flights")}>
+                            <button onClick={() => goTo("/flights")}>
                                 Find Flights <ArrowRight size={15} />
                             </button>
                         </div>

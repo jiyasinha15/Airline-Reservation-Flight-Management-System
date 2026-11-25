@@ -26,7 +26,28 @@ export default function Payment() {
         );
     }
 
-    const { booking, flight, search, total } = state;
+    const {
+        booking,
+        flight,
+        search,
+        total,
+        cabinClass = "Economy",
+        mealType = "none",
+        mealPrice = 0,
+        classFare = Number(flight?.price || 0),
+        perPassengerFare = Number(flight?.price || 0),
+    } = state;
+
+    const passengerCount = Number(
+        search?.passengers || booking?.passengerCount || 1
+    );
+
+    const mealLabel =
+        mealType === "vegetarian"
+            ? "Vegetarian Meal"
+            : mealType === "nonVegetarian"
+                ? "Non-Vegetarian Meal"
+                : "No Meal";
 
     async function handlePayment(simulateFailure = false) {
         if (processing) return;
@@ -52,6 +73,12 @@ export default function Payment() {
                     paymentMethod: method,
                     passengerCount: Number(booking.passengerCount),
                     simulateFailure,
+
+                    cabinClass,
+                    mealType,
+                    mealPrice,
+                    classFare,
+                    totalFare: total,
                 }),
             });
 
@@ -233,6 +260,37 @@ export default function Payment() {
                     <div className="checkout-detail">
                         <span>Passengers</span>
                         <strong>{search?.passengers}</strong>
+                    </div>
+
+                    <div className="checkout-detail">
+                        <span>Cabin Class</span>
+                        <strong>{cabinClass}</strong>
+                    </div>
+
+                    <div className="checkout-detail">
+                        <span>Cabin Fare / Passenger</span>
+                        <strong>
+                            ₹{Number(classFare).toLocaleString("en-IN")}
+                        </strong>
+                    </div>
+
+                    <div className="checkout-detail">
+                        <span>Meal</span>
+                        <strong>{mealLabel}</strong>
+                    </div>
+
+                    <div className="checkout-detail">
+                        <span>Meal Charge</span>
+                        <strong>
+                            ₹{(Number(mealPrice) * passengerCount).toLocaleString("en-IN")}
+                        </strong>
+                    </div>
+
+                    <div className="checkout-detail">
+                        <span>Fare / Passenger</span>
+                        <strong>
+                            ₹{Number(perPassengerFare).toLocaleString("en-IN")}
+                        </strong>
                     </div>
 
                     <div className="checkout-total">

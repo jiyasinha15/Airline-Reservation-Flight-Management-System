@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
     Plane, UserRound, ShieldCheck, Eye, EyeOff, ArrowLeft
 } from "lucide-react";
@@ -9,6 +9,7 @@ import "./Login.css";
 export default function Login() {
     const { role } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [loading, setLoading] = useState(false);
     const isAdmin = role === "admin";
     const [email, setEmail] = useState("");
@@ -51,7 +52,19 @@ export default function Login() {
             if (isAdmin) {
                 navigate("/admin/dashboard");
             } else {
-                navigate("/user/dashboard");
+                const redirectTo = location.state?.redirectTo;
+                const bookingState = location.state?.bookingState;
+
+                if (redirectTo === "/booking" && bookingState?.flight) {
+                    navigate("/booking", {
+                        state: bookingState,
+                        replace: true
+                    });
+                } else {
+                    navigate("/user/dashboard", {
+                        replace: true
+                    });
+                }
             }
 
         } catch (error) {
@@ -131,7 +144,13 @@ export default function Login() {
                     {!isAdmin && (
                         <p className="auth-footer">
                             New to Aurelia Air?{" "}
-                            <span onClick={() => navigate("/signup")}>
+                            <span
+                                onClick={() =>
+                                    navigate("/signup", {
+                                        state: location.state
+                                    })
+                                }
+                            >
                                 Create an account
                             </span>
                         </p>

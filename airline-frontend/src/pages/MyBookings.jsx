@@ -1,6 +1,9 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import html2pdf from "html2pdf.js";
+import Barcode from "react-barcode";
+import { useLocation } from "react-router-dom";
 import {
   Plane,
   ArrowLeft,
@@ -11,12 +14,20 @@ import {
   CalendarDays,
   UserRound,
   ShieldCheck,
+  Download,
+  Armchair,
 } from "lucide-react";
+import "./MyBookings.css";
 
 const API_URL = "http://localhost:5000/api/bookings";
 
 function MyBookings() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const fromDashboard =
+    location.state?.from === "dashboard";
+  const ticketRef = useRef(null);
 
   const [pnr, setPnr] = useState("");
   const [booking, setBooking] = useState(null);
@@ -50,9 +61,7 @@ function MyBookings() {
 
       setBooking(data.booking);
     } catch (err) {
-      setError(
-        err.message || "Unable to connect to the booking server."
-      );
+      setError(err.message || "Unable to connect to the booking server.");
     } finally {
       setLoading(false);
     }
@@ -61,9 +70,23 @@ function MyBookings() {
   function formatDate(value) {
     if (!value) return "Not available";
 
-    const date = new Date(value);
+    const str = String(value);
 
-    if (Number.isNaN(date.getTime())) return String(value);
+    // Avoid timezone shifting for DATE values like 2026-11-27
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      const [year, month, day] = str.split("-").map(Number);
+      const date = new Date(year, month - 1, day);
+
+      return date.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+    }
+
+    const date = new Date(str.replace(" ", "T"));
+
+    if (Number.isNaN(date.getTime())) return str;
 
     return date.toLocaleDateString("en-IN", {
       day: "numeric",
@@ -77,15 +100,47 @@ function MyBookings() {
     return String(value).slice(0, 5);
   }
 
+  async function downloadTicket() {
+    if (!ticketRef.current) return;
+
+    const options = {
+      margin: 8,
+      filename: `Aurelia-Air-Ticket-${booking.pnr}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      },
+      jsPDF: {
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait",
+      },
+    };
+
+    try {
+      await html2pdf().set(options).from(ticketRef.current).save();
+    } catch (err) {
+      console.error("PDF download failed:", err);
+      setError("Unable to download ticket. Please try again.");
+    }
+  }
+
   return (
     <main className="my-bookings-page">
       <header className="my-bookings-header">
         <button
           className="my-bookings-back"
-          onClick={() => navigate("/")}
+          onClick={() =>
+            navigate(
+              fromDashboard ? "/user/dashboard" : "/",
+              { replace: true }
+            )
+          }
         >
           <ArrowLeft size={18} />
-          Homepage
+          {fromDashboard ? "Back to Dashboard" : "Homepage"}
         </button>
 
         <div className="my-bookings-brand">
@@ -107,10 +162,7 @@ function MyBookings() {
           </p>
         </div>
 
-        <form
-          className="my-bookings-search"
-          onSubmit={handleSearch}
-        >
+        <form className="my-bookings-search" onSubmit={handleSearch}>
           <label htmlFor="booking-pnr">Booking reference (PNR)</label>
 
           <div className="my-bookings-search-row">
@@ -140,103 +192,172 @@ function MyBookings() {
         )}
 
         {booking && (
-          <section className="my-booking-card">
-            <div className="my-booking-card-heading">
-              <div className="my-booking-ticket-icon">
-                <TicketCheck size={26} />
-              </div>
+          <>
+            <section className="my-booking-card" ref={ticketRef}>
+              <div className="my-booking-card-heading">
+                <div className="my-booking-ticket-icon">
+                  <TicketCheck size={26} />
+                </div>
 
-              <div>
-                <span className="my-bookings-kicker">
-                  BOOKING REFERENCE
-                </span>
-                <h2>{booking.pnr}</h2>
-              </div>
+                <div>
+                  <span className="my-bookings-kicker">
+                    BOOKING REFERENCE
+                  </span>
+                  <h2>{booking.pnr}</h2>
+                </div>
 
-              <span className="my-booking-status">
-                {booking.status}
-              </span>
-            </div>
-
-            <div className="my-booking-airline">
-              <Plane size={22} />
-              <div>
-                <strong>{booking.airline}</strong>
-                <span>{booking.flightCode}</span>
-              </div>
-            </div>
-
-            <div className="my-booking-route">
-              <div>
-                <span>FROM</span>
-                <h3>{booking.origin}</h3>
-                <strong>{formatTime(booking.departureTime)}</strong>
-              </div>
-
-              <div className="my-booking-route-middle">
-                <span className="my-booking-route-line" />
-                <Plane size={20} />
-                <span className="my-booking-route-line" />
-              </div>
-
-              <div>
-                <span>TO</span>
-                <h3>{booking.destination}</h3>
-                <strong>{formatTime(booking.arrivalTime)}</strong>
-              </div>
-            </div>
-
-            <div className="my-booking-details">
-              <div>
-                <UserRound size={18} />
-                <span>
-                  Passenger
-                  <strong>{booking.passengerName}</strong>
+                <span className="my-booking-status">
+                  {booking.status}
                 </span>
               </div>
 
-              <div>
-                <CalendarDays size={18} />
-                <span>
-                  Booking date
-                  <strong>{formatDate(booking.bookingDate)}</strong>
-                </span>
+              <div className="my-booking-barcode">
+                <Barcode
+                  value={booking.pnr}
+                  format="CODE128"
+                  width={1.8}
+                  height={55}
+                  displayValue={true}
+                  fontSize={14}
+                  background="#ffffff"
+                  lineColor="#111827"
+                  margin={8}
+                />
+                <p>SCAN BOOKING REFERENCE</p>
               </div>
 
-              <div>
-                <MapPin size={18} />
-                <span>
-                  Route
+              <div className="my-booking-airline">
+                <Plane size={22} />
+                <div>
+                  <strong>{booking.airline}</strong>
+                  <span>{booking.flightCode}</span>
+                </div>
+              </div>
+
+              <div className="my-booking-route">
+                <div>
+                  <span>FROM</span>
+                  <h3>{booking.origin}</h3>
+                  <strong>{formatTime(booking.departureTime)}</strong>
+                </div>
+
+                <div className="my-booking-route-middle">
+                  <span className="my-booking-route-line" />
+                  <Plane size={20} />
+                  <span className="my-booking-route-line" />
+                </div>
+
+                <div>
+                  <span>TO</span>
+                  <h3>{booking.destination}</h3>
+                  <strong>{formatTime(booking.arrivalTime)}</strong>
+                </div>
+              </div>
+
+              <div className="my-booking-details">
+                <div>
+                  <UserRound size={18} />
+                  <span>
+                    Passenger
+                    <strong>{booking.passengerName}</strong>
+                  </span>
+                </div>
+
+                <div>
+                  <CalendarDays size={18} />
+                  <span>
+                    Travel date
+                    <strong>{formatDate(booking.flightDate)}</strong>
+                  </span>
+                </div>
+
+                <div>
+                  <CalendarDays size={18} />
+                  <span>
+                    Booking date
+                    <strong>{formatDate(booking.bookingDate)}</strong>
+                  </span>
+                </div>
+
+                <div>
+                  <Armchair size={18} />
+                  <span>
+                    Seat number
+                    <strong>{booking.seatNumbers || "Not assigned"}</strong>
+                  </span>
+                </div>
+
+                <div>
+                  <MapPin size={18} />
+                  <span>
+                    Route
+                    <strong>
+                      {booking.origin} → {booking.destination}
+                    </strong>
+                  </span>
+                </div>
+
+                <div>
+                  <Clock3 size={18} />
+                  <span>
+                    Flight time
+                    <strong>
+                      {formatTime(booking.departureTime)} –{" "}
+                      {formatTime(booking.arrivalTime)}
+                    </strong>
+                  </span>
+                </div>
+              </div>
+
+              <div className="my-booking-fare-breakdown">
+                <h3>Fare Breakdown</h3>
+
+                <div className="my-booking-fare-row">
+                  <span>Base Fare</span>
                   <strong>
-                    {booking.origin} → {booking.destination}
+                    ₹{Number(booking.price || 0).toLocaleString("en-IN")}
                   </strong>
-                </span>
-              </div>
+                </div>
 
-              <div>
-                <Clock3 size={18} />
-                <span>
-                  Flight time
+                <div className="my-booking-fare-row">
+                  <span>Cabin Class ({booking.cabinClass || "Economy"})</span>
                   <strong>
-                    {formatTime(booking.departureTime)} –{" "}
-                    {formatTime(booking.arrivalTime)}
+                    ₹{Number(booking.cabinFare || 0).toLocaleString("en-IN")}
                   </strong>
-                </span>
+                </div>
+
+                <div className="my-booking-fare-row">
+                  <span>Meal ({booking.mealType || "none"})</span>
+                  <strong>
+                    ₹{Number(booking.mealPrice || 0).toLocaleString("en-IN")}
+                  </strong>
+                </div>
+
+                <div className="my-booking-fare-row my-booking-fare-total">
+                  <span>Total Fare</span>
+                  <strong>
+                    ₹{Number(
+                      booking.totalFare ??
+                      (Number(booking.cabinFare || 0) + Number(booking.mealPrice || 0))
+                    ).toLocaleString("en-IN")}
+                  </strong>
+                </div>
               </div>
-            </div>
 
-            <div className="my-booking-total">
-              <span>Database fare per passenger</span>
-              <strong>
-                ₹{Number(booking.price).toLocaleString("en-IN")}
-              </strong>
-            </div>
+              <p className="my-booking-note">
+                This is a database-backed project demonstration, not a real
+                airline ticket or payment confirmation.
+              </p>
+            </section>
 
-            <p className="my-booking-note">
-              This is a database-backed project demonstration, not a real
-              airline ticket or payment confirmation.
-            </p>
-          </section>
+            <button
+              className="my-booking-download"
+              onClick={downloadTicket}
+            >
+              <Download size={19} />
+              Download Ticket PDF
+            </button>
+          </>
         )}
 
         {!booking && !loading && !error && (

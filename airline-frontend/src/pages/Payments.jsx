@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
   CreditCard, Search, ArrowLeft, RefreshCw, Receipt
 } from "lucide-react";
@@ -8,6 +9,8 @@ import "./Payments.css";
 
 export default function Payments() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isAdmin = location.pathname === "/admin/payments";
 
   const [payments, setPayments] = useState([]);
   const [search, setSearch] = useState("");
@@ -20,7 +23,9 @@ export default function Payments() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/admin/payments",
+        isAdmin
+          ? "http://localhost:5000/api/admin/payments"
+          : "http://localhost:5000/api/user/payments",
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("aureliaToken")}`,
@@ -78,15 +83,26 @@ export default function Payments() {
       <header className="payments-header">
         <button
           className="payment-back-btn"
-          onClick={() => navigate("/admin/dashboard")}
+          onClick={() =>
+            navigate(isAdmin ? "/admin/dashboard" : "/user/dashboard")
+          }
         >
-          <ArrowLeft size={18} /> Dashboard
+          <ArrowLeft size={18} />
+          {isAdmin ? "Admin Dashboard" : "User Dashboard"}
         </button>
 
         <div>
-          <span className="payment-eyebrow">AURELIA AIR / ADMIN</span>
-          <h1>Payments Management</h1>
-          <p>Monitor payment transactions and revenue.</p>
+          <span className="payment-eyebrow">
+            AURELIA AIR / {isAdmin ? "ADMIN" : "MY ACCOUNT"}
+          </span>
+
+          <h1>{isAdmin ? "Payments Management" : "My Payment History"}</h1>
+
+          <p>
+            {isAdmin
+              ? "Monitor payment transactions and revenue."
+              : "View your booking payments and transaction status."}
+          </p>
         </div>
 
         <button className="payment-refresh-btn" onClick={loadPayments}>

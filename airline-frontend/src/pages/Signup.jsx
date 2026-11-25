@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Plane, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import "./Signup.css";
 
 export default function Signup() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
@@ -55,9 +56,11 @@ export default function Signup() {
         return;
       }
 
-      alert("Account created successfully!");
+      alert("Account created successfully! Please sign in.");
 
-      navigate("/login/user");
+      navigate("/login/user", {
+        state: location.state,
+      });
     } catch (error) {
       console.error("Signup error:", error);
       alert("Unable to connect to server. Please try again.");
@@ -73,7 +76,13 @@ export default function Signup() {
           <Plane size={25} /> AURELIA <b>AIR</b>
         </div>
 
-        <button onClick={() => navigate("/login/user")}>
+        <button
+          onClick={() =>
+            navigate("/login/user", {
+              state: location.state,
+            })
+          }
+        >
           <ArrowLeft size={16} /> Back to Login
         </button>
       </nav>
@@ -154,7 +163,15 @@ export default function Signup() {
 
           <div className="signup-footer">
             Already have an account?{" "}
-            <span onClick={() => navigate("/login/user")}>Sign In</span>
+            <span
+              onClick={() =>
+                navigate("/login/user", {
+                  state: location.state,
+                })
+              }
+            >
+              Sign In
+            </span>
           </div>
         </div>
       </div>

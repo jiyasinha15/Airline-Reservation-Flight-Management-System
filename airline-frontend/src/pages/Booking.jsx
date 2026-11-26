@@ -7,6 +7,8 @@ import {
   ShieldCheck
 } from "lucide-react";
 
+
+
 import "./Booking.css";
 import SeatSelection from "../components/SeatSelection";
 
@@ -131,7 +133,7 @@ function Booking() {
     setSaving(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/bookings`, {
+      const response = await fetch(`${API_URL}/bookings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

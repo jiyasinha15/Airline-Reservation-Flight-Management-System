@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Armchair, RefreshCw } from "lucide-react";
 import "./SeatSelection.css";
 
-const API_URL = "import.meta.env.VITE_API_URL";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function SeatSelection({
   flightId,
@@ -28,7 +28,7 @@ export default function SeatSelection({
       setError("");
 
       const response = await fetch(
-        `${API_URL}/api/flights/${flightId}/seats`
+        `${API_URL}/flights/${flightId}/seats`
       );
 
       const data = await response.json();

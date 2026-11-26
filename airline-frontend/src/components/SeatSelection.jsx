@@ -31,7 +31,17 @@ export default function SeatSelection({
         `${API_URL}/flights/${flightId}/seats`
       );
 
-      const data = await response.json();
+      const text = await response.text();
+
+      let data;
+
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(
+          `Seats API did not return JSON: ${text.slice(0, 200)}`
+        );
+      }
 
       if (!response.ok || !data.success) {
         throw new Error(
@@ -39,7 +49,7 @@ export default function SeatSelection({
         );
       }
 
-      const formattedSeats = data.seats.map(seat => ({
+      const formattedSeats = (data.seats || []).map(seat => ({
         seatId: seat.seat_id,
         seatNumber: seat.seat_number,
         seatType: seat.seat_type,
@@ -47,6 +57,8 @@ export default function SeatSelection({
       }));
 
       setSeats(formattedSeats);
+
+
 
       setSelectedSeats(previous =>
         previous.filter(number =>
@@ -70,9 +82,8 @@ export default function SeatSelection({
   useEffect(() => {
     setSeats([]);
     setSelectedSeats([]);
-    onSeatsChange?.([]);
     fetchSeats();
-  }, [fetchSeats, onSeatsChange]);
+  }, [fetchSeats]);
 
   // SEND SELECTED SEATS TO BOOKING PAGE
   useEffect(() => {
@@ -227,13 +238,12 @@ export default function SeatSelection({
 
                   <button
                     type="button"
-                    className={`seat ${
-                      seat.seatStatus === "BOOKED"
+                    className={`seat ${seat.seatStatus === "BOOKED"
                         ? "booked"
                         : selectedSeats.includes(seat.seatNumber)
-                        ? "selected"
-                        : "available"
-                    }`}
+                          ? "selected"
+                          : "available"
+                      }`}
                     disabled={
                       seat.seatStatus !== "AVAILABLE"
                     }

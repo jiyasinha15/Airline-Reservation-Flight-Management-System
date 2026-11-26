@@ -63,7 +63,7 @@ export default function Payment() {
                 passengerCount: booking?.passengerCount,
                 booking
             });
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/payments`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -82,7 +82,17 @@ export default function Payment() {
                 }),
             });
 
-            const data = await response.json();
+            const text = await response.text();
+
+            let data;
+
+            try {
+                data = JSON.parse(text);
+            } catch {
+                throw new Error(
+                    `Payment API did not return JSON: ${text.slice(0, 200)}`
+                );
+            }
 
             if (!response.ok || !data.success) {
                 throw new Error(data.message || "Payment failed.");

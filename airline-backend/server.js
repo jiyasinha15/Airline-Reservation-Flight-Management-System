@@ -2401,6 +2401,34 @@ app.get("/api/aviation/test-flights", async (req, res) => {
   }
 });
 
+// GET ALL AIRPORTS
+app.get("/api/airports", async (req, res) => {
+    try {
+        const [airports] = await db.query(`
+            SELECT
+                airport_code AS code,
+                airport_name AS name,
+                city,
+                country
+            FROM airports
+            ORDER BY city
+        `);
+
+        res.json({
+            success: true,
+            airports
+        });
+
+    } catch (error) {
+        console.error("Airports API error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Unable to fetch airports"
+        });
+    }
+});
+
 app.listen(PORT, () => {
   console.log(`Aurelia Air backend running at http://localhost:${PORT}`);
 });

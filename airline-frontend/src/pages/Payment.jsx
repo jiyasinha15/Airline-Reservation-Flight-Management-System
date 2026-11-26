@@ -63,7 +63,7 @@ export default function Payment() {
                 passengerCount: booking?.passengerCount,
                 booking
             });
-            const response = await fetch("http://localhost:5000/api/payments", {
+            const response = await fetch("${import.meta.env.VITE_API_URL}/api/payments", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

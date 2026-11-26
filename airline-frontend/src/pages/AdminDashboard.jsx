@@ -111,7 +111,7 @@ export default function AdminDashboard() {
             };
 
             const response = await fetch(
-                `http://localhost:5000/api/admin/flights/${selectedFlight.id}`,
+                `${import.meta.env.VITE_API_URL}/api/admin/flights/${selectedFlight.id}`,
                 {
                     method: "PUT",
                     headers: {
@@ -151,8 +151,8 @@ export default function AdminDashboard() {
             setError("");
 
             const [flightResponse, statsResponse] = await Promise.all([
-                fetch("http://localhost:5000/api/flights"),
-                fetch("http://localhost:5000/api/admin/stats", {
+                fetch(`${import.meta.env.VITE_API_URL}/api/flights`),
+                fetch(`${import.meta.env.VITE_API_URL}/api/admin/stats`, {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("aureliaToken")}`,
                     },

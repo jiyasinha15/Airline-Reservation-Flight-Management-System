@@ -111,8 +111,8 @@ export default function FlightTracker() {
       const isAureliaFlight = number.toUpperCase().startsWith("AU");
 
       const trackingURL = isAureliaFlight
-        ? `http://localhost:5000/api/database-tracking/${encodeURIComponent(number)}`
-        : `http://localhost:5000/api/live-tracking/${encodeURIComponent(number)}`;
+        ? `${import.meta.env.VITE_API_URL}/api/database-tracking/${encodeURIComponent(number)}`
+        : `${import.meta.env.VITE_API_URL}/api/live-tracking/${encodeURIComponent(number)}`;
 
       const response = await fetch(trackingURL);
 

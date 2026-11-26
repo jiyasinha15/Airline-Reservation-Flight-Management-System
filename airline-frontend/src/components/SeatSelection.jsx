@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Armchair, RefreshCw } from "lucide-react";
 import "./SeatSelection.css";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "import.meta.env.VITE_API_URL";
 
 export default function SeatSelection({
   flightId,

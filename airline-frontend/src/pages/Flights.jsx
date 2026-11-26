@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import "./Flights.css";
 
-const API_URL = "http://localhost:5000/api/flights";
+const API_URL = "${import.meta.env.VITE_API_URL}/api/flights";
 const getTodayDate = () => {
     const today = new Date();
     const year = today.getFullYear();
@@ -142,7 +142,7 @@ export default function Flights() {
         async function fetchAirports() {
             try {
                 const response = await fetch(
-                    "http://localhost:5000/api/airports"
+                    "${import.meta.env.VITE_API_URL}/api/airports"
                 );
 
                 if (!response.ok) {

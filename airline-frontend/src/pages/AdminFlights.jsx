@@ -46,7 +46,7 @@ export default function AdminFlights() {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:5000/api/flights");
+      const response = await fetch("${${import.meta.env.VITE_API_URL}}/api/flights");
       const data = await response.json();
 
       if (!response.ok) {
@@ -85,8 +85,8 @@ export default function AdminFlights() {
 
     try {
       const url = editingId
-        ? `http://localhost:5000/api/admin/flights/${editingId}`
-        : "http://localhost:5000/api/admin/flights";
+        ? `${import.meta.env.VITE_API_URL}/api/admin/flights/${editingId}`
+        : "${import.meta.env.VITE_API_URL}/api/admin/flights";
 
       const response = await fetch(url, {
         method: editingId ? "PUT" : "POST",
@@ -165,7 +165,7 @@ export default function AdminFlights() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/admin/flights/${flight.id}`,
+        `${import.meta.env.VITE_API_URL}/api/admin/flights/${flight.id}`,
         {
           method: "DELETE",
           headers: {

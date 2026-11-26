@@ -10,7 +10,7 @@ import {
 import "./Booking.css";
 import SeatSelection from "../components/SeatSelection";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "${import.meta.env.VITE_API_URL}";
 
 function Booking() {
   const navigate = useNavigate();

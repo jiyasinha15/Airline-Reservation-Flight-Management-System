@@ -24,8 +24,8 @@ export default function Payments() {
     try {
       const response = await fetch(
         isAdmin
-          ? "${import.meta.env.VITE_API_URL}/api/admin/payments"
-          : "${import.meta.env.VITE_API_URL}/api/user/payments",
+          ? `${import.meta.env.VITE_API_URL}/api/admin/payments`
+          : `${import.meta.env.VITE_API_URL}/api/user/payments`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("aureliaToken")}`,

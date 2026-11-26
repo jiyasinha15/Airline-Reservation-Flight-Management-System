@@ -21,7 +21,7 @@ export default function Passengers() {
 
     try {
       const response = await fetch(
-        "${import.meta.env.VITE_API_URL}/api/admin/passengers",
+        `${import.meta.env.VITE_API_URL}/api/admin/passengers`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("aureliaToken")}`,

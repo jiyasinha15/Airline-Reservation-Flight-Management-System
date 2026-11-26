@@ -86,7 +86,7 @@ export default function AdminFlights() {
     try {
       const url = editingId
         ? `${import.meta.env.VITE_API_URL}/api/admin/flights/${editingId}`
-        : "${import.meta.env.VITE_API_URL}/api/admin/flights";
+        : `${import.meta.env.VITE_API_URL}/api/admin/flights`;
 
       const response = await fetch(url, {
         method: editingId ? "PUT" : "POST",

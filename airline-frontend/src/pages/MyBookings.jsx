@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import "./MyBookings.css";
 
-const API_URL = "${import.meta.env.VITE_API_URL}/api/bookings";
+const API_URL = `${import.meta.env.VITE_API_URL}/api/bookings`;
 
 function MyBookings() {
   const navigate = useNavigate();

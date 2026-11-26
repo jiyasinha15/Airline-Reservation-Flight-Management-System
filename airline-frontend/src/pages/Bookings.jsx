@@ -20,7 +20,7 @@ export default function Bookings() {
 
     try {
       const response = await fetch(
-        "${import.meta.env.VITE_API_URL}/api/admin/bookings",
+        `${import.meta.env.VITE_API_URL}/api/admin/bookings`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("aureliaToken")}`,
